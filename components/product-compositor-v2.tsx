@@ -74,93 +74,158 @@ async function normalizeImageToPng(src: string): Promise<string> {
   return canvas.toDataURL("image/png")
 }
 
-// Refines the AI matte using border flood-fill. The true background is the
-// transparent area that connects to the image edge; everything enclosed by the
-// product silhouette is treated as product. This is the key to handling white
-// products on a white background, where the model often leaves the product body
-// faint/semi-transparent:
-//   - Background (low alpha connected to the border) -> fully transparent.
-//   - Product interior (incl. faint/ghosted body the model dropped) -> opaque,
-//     which also removes "flammighet" on shiny surfaces.
-//   - A thin edge band keeps the model's natural anti-aliased alpha, so edges
-//     stay smooth instead of choppy.
-function refineMatte(blob: Blob, bgThreshold = 40, rim = 2): Promise<Blob> {
+// Loads an image source into a fresh RGBA pixel buffer at the given size.
+function loadPixels(src: string, w: number, h: number): Promise<Uint8ClampedArray | null> {
   return new Promise((resolve) => {
-    const url = URL.createObjectURL(blob)
     const img = new Image()
+    img.crossOrigin = "anonymous"
     img.onload = () => {
-      const { naturalWidth: w, naturalHeight: h } = img
-      const canvas = document.createElement("canvas")
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext("2d", { willReadFrequently: true })!
-      ctx.drawImage(img, 0, 0)
-      URL.revokeObjectURL(url)
-      const imageData = ctx.getImageData(0, 0, w, h)
-      const data = imageData.data
-      const n = w * h
+      const c = document.createElement("canvas")
+      c.width = w
+      c.height = h
+      const cx = c.getContext("2d", { willReadFrequently: true })!
+      cx.drawImage(img, 0, 0, w, h)
+      resolve(cx.getImageData(0, 0, w, h).data)
+    }
+    img.onerror = () => resolve(null)
+    img.src = src
+  })
+}
 
-      // 1. Flood-fill the background from the border, travelling only through
-      //    near-transparent pixels (alpha < bgThreshold).
-      const outside = new Uint8Array(n)
-      const stack: number[] = []
-      const trySeed = (i: number) => {
-        if (!outside[i] && data[i * 4 + 3] < bgThreshold) {
-          outside[i] = 1
-          stack.push(i)
-        }
-      }
-      for (let x = 0; x < w; x++) {
-        trySeed(x)
-        trySeed((h - 1) * w + x)
+// Refines the AI matte using border flood-fill, keyed primarily on the ORIGINAL
+// background colour. The background is the region that connects to the image
+// edge through pixels that look like the sampled background colour, so the fill
+// stops at the product's (even very subtle) edge instead of leaking into a white
+// body that the model left faint. Everything enclosed by that edge becomes the
+// product:
+//   - Background -> fully transparent.
+//   - Product interior (incl. faint white body) -> opaque (also kills
+//     "flammighet" on shiny surfaces).
+//   - A thin edge band keeps the model's natural anti-aliased alpha (smooth).
+// If the background is not reasonably uniform, it falls back to flooding through
+// near-transparent matte pixels only.
+async function refineMatte(blob: Blob, originalSrc: string, rim = 2): Promise<Blob> {
+  const matteUrl = URL.createObjectURL(blob)
+  try {
+    const matteImg = await new Promise<HTMLImageElement | null>((res) => {
+      const im = new Image()
+      im.onload = () => res(im)
+      im.onerror = () => res(null)
+      im.src = matteUrl
+    })
+    if (!matteImg) return blob
+
+    const w = matteImg.naturalWidth
+    const h = matteImg.naturalHeight
+    const n = w * h
+    const canvas = document.createElement("canvas")
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })!
+    ctx.drawImage(matteImg, 0, 0)
+    const imageData = ctx.getImageData(0, 0, w, h)
+    const data = imageData.data
+
+    const orig = await loadPixels(originalSrc, w, h)
+
+    // --- Sample the background colour from the border frame of the original ---
+    let useColor = false
+    let bgR = 0, bgG = 0, bgB = 0
+    if (orig) {
+      const frame = Math.max(2, Math.round(Math.min(w, h) * 0.02))
+      let cnt = 0, sum = 0, sumSq = 0
+      const sample = (i: number) => {
+        const r = orig[i * 4], g = orig[i * 4 + 1], b = orig[i * 4 + 2]
+        bgR += r; bgG += g; bgB += b; cnt++
+        const lum = (r + g + b) / 3
+        sum += lum; sumSq += lum * lum
       }
       for (let y = 0; y < h; y++) {
-        trySeed(y * w)
-        trySeed(y * w + w - 1)
-      }
-      while (stack.length) {
-        const i = stack.pop()!
-        const px = i % w, py = (i / w) | 0
-        if (py > 0) trySeed(i - w)
-        if (py < h - 1) trySeed(i + w)
-        if (px > 0) trySeed(i - 1)
-        if (px < w - 1) trySeed(i + 1)
-      }
-
-      // 2. Dilate the background region by `rim` px -> the thin edge band where
-      //    we keep the model's natural (smooth) alpha.
-      let near = outside.slice()
-      for (let pass = 0; pass < rim; pass++) {
-        const next = near.slice()
-        for (let i = 0; i < n; i++) {
-          if (near[i]) continue
-          const px = i % w, py = (i / w) | 0
-          if (
-            (py > 0 && near[i - w]) ||
-            (py < h - 1 && near[i + w]) ||
-            (px > 0 && near[i - 1]) ||
-            (px < w - 1 && near[i + 1])
-          ) {
-            next[i] = 1
+        for (let x = 0; x < w; x++) {
+          if (x < frame || x >= w - frame || y < frame || y >= h - frame) {
+            sample(y * w + x)
           }
         }
-        near = next
       }
-
-      // 3. Compose: background -> 0, edge band -> keep natural alpha, deep
-      //    interior -> fully opaque.
-      for (let i = 0; i < n; i++) {
-        if (outside[i]) data[i * 4 + 3] = 0
-        else if (!near[i]) data[i * 4 + 3] = 255
-        // else: edge band, keep the model's natural alpha for smooth edges
+      if (cnt > 0) {
+        bgR /= cnt; bgG /= cnt; bgB /= cnt
+        const std = Math.sqrt(Math.max(0, sumSq / cnt - (sum / cnt) ** 2))
+        // Uniform border => trust colour keying.
+        useColor = std < 26
       }
-
-      ctx.putImageData(imageData, 0, 0)
-      canvas.toBlob((b) => resolve(b ?? blob), "image/png")
     }
-    img.onerror = () => resolve(blob)
-    img.src = url
-  })
+
+    const COLOR_TOL2 = 44 * 44
+    const ALPHA_BG = 12 // matte alpha that is unambiguously background
+
+    const floodable = (i: number): boolean => {
+      if (data[i * 4 + 3] < ALPHA_BG) return true
+      if (useColor && orig) {
+        const dr = orig[i * 4] - bgR
+        const dg = orig[i * 4 + 1] - bgG
+        const db = orig[i * 4 + 2] - bgB
+        if (dr * dr + dg * dg + db * db < COLOR_TOL2) return true
+      }
+      return false
+    }
+
+    // 1. Flood-fill the background inward from the border.
+    const outside = new Uint8Array(n)
+    const stack: number[] = []
+    const trySeed = (i: number) => {
+      if (!outside[i] && floodable(i)) {
+        outside[i] = 1
+        stack.push(i)
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      trySeed(x)
+      trySeed((h - 1) * w + x)
+    }
+    for (let y = 0; y < h; y++) {
+      trySeed(y * w)
+      trySeed(y * w + w - 1)
+    }
+    while (stack.length) {
+      const i = stack.pop()!
+      const px = i % w, py = (i / w) | 0
+      if (py > 0) trySeed(i - w)
+      if (py < h - 1) trySeed(i + w)
+      if (px > 0) trySeed(i - 1)
+      if (px < w - 1) trySeed(i + 1)
+    }
+
+    // 2. Dilate the background region by `rim` px -> thin edge band that keeps
+    //    the model's natural (smooth) alpha.
+    let near = outside.slice()
+    for (let pass = 0; pass < rim; pass++) {
+      const next = near.slice()
+      for (let i = 0; i < n; i++) {
+        if (near[i]) continue
+        const px = i % w, py = (i / w) | 0
+        if (
+          (py > 0 && near[i - w]) ||
+          (py < h - 1 && near[i + w]) ||
+          (px > 0 && near[i - 1]) ||
+          (px < w - 1 && near[i + 1])
+        ) {
+          next[i] = 1
+        }
+      }
+      near = next
+    }
+
+    // 3. Compose: background -> 0, edge band -> natural alpha, interior -> opaque.
+    for (let i = 0; i < n; i++) {
+      if (outside[i]) data[i * 4 + 3] = 0
+      else if (!near[i]) data[i * 4 + 3] = 255
+    }
+
+    ctx.putImageData(imageData, 0, 0)
+    return await new Promise<Blob>((res) => canvas.toBlob((b) => res(b ?? blob), "image/png"))
+  } finally {
+    URL.revokeObjectURL(matteUrl)
+  }
 }
 
 // Removes small, disconnected specks the segmentation model sometimes leaves
@@ -301,7 +366,7 @@ export function ProductCompositor() {
         // Step 3: cleanup — border flood-fill refine (recovers faint white
         // bodies, kills ghosts, solidifies interior, keeps edges smooth), then
         // drop stray specks/islands.
-        const refinedBlob = await refineMatte(rawBlob)
+        const refinedBlob = await refineMatte(rawBlob, pngDataUrl)
         const blob = await removeSmallIslands(refinedBlob)
         const url = URL.createObjectURL(blob)
         const img = await loadImage(url)
