@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { removeBackground } from "@imgly/background-removal"
 import { Download, Loader2, Settings2, Wand2, AlertCircle, Plus } from "lucide-react"
+import { removeProductBackground } from "@/lib/bg-remover"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
@@ -253,12 +253,10 @@ export function ProductCompositor() {
         // Yield again before the heavy ONNX inference
         await new Promise<void>((r) => setTimeout(r, 0))
 
-        // Step 2: AI background removal using the full-precision ISNet model
-        // (isnet_fp16 struggles with white-on-white; full isnet is more accurate)
-        const rawBlob = await removeBackground(pngDataUrl, {
-          model: "isnet",
-          output: { format: "image/png", quality: 1 },
-        })
+        // Step 2: AI background removal in a Web Worker so the main thread stays
+        // responsive — both product images can be dropped and processed at once.
+        // (Full-precision ISNet model: isnet_fp16 struggles with white-on-white.)
+        const rawBlob = await removeProductBackground(pngDataUrl)
 
         setImages((prev) => {
           const next = [...prev] as [ImageState, ImageState]
