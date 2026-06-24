@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef } from "react"
 import { removeBackground } from "@imgly/background-removal"
-import { Download, Loader2, Settings2, Wand2, AlertCircle } from "lucide-react"
+import { Download, Loader2, Settings2, Wand2, AlertCircle, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
@@ -31,8 +31,6 @@ const PRESET_COLORS = [
   { label: "Marinbla", value: "#0f2044" },
 ]
 
-const TRANSPARENT_VALUE = "transparent"
-
 function makeEmptyState(): ImageState {
   return {
     original: "",
@@ -54,30 +52,33 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
-// Converts any browser-renderable image to PNG with green padding.
-// The vivid green border gives the AI segmentation model clear context
-// about where the background is, even for tightly-cropped images.
-async function normalizeImageToPng(src: string, paddingFrac = 0.15): Promise<string> {
+// Normalises any browser-renderable image to a PNG data URL and downscales very
+// large photos. Feeding a full-resolution 20 MP image straight into the
+// in-browser AI model is the most common cause of the tab freezing or running
+// out of memory, so we cap the longest edge before segmentation. We do NOT add
+// any coloured padding: a coloured frame bleeds a tinted halo into the cut-out
+// edges, and the ISNet model already handles tightly-cropped products well.
+const MAX_SEGMENT_DIMENSION = 2048
+
+async function normalizeImageToPng(src: string): Promise<string> {
   const img = await loadImage(src)
-  const w = img.naturalWidth, h = img.naturalHeight
-  const pw = Math.round(w * paddingFrac)
-  const ph = Math.round(h * paddingFrac)
+  const scale = Math.min(1, MAX_SEGMENT_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight))
+  const w = Math.round(img.naturalWidth * scale)
+  const h = Math.round(img.naturalHeight * scale)
   const canvas = document.createElement("canvas")
-  canvas.width = w + pw * 2
-  canvas.height = h + ph * 2
+  canvas.width = w
+  canvas.height = h
   const ctx = canvas.getContext("2d")!
-  // Vivid green padding is distinguishable from all appliance colors
-  ctx.fillStyle = "#00B140"
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  ctx.drawImage(img, pw, ph, w, h)
+  ctx.imageSmoothingQuality = "high"
+  ctx.drawImage(img, 0, 0, w, h)
   return canvas.toDataURL("image/png")
 }
 
-// After AI background removal, two types of fringe may remain:
-// 1. Near-white residual fringe on white products
-// 2. Green-tinted semi-transparent pixels from the green padding bleed
-// This function erodes both by removing affected pixels touching the transparent boundary.
-function erodeWhiteFringe(blob: Blob, passes = 3): Promise<Blob> {
+// Trims a light residual halo that segmentation can leave around products that
+// were photographed on a white background. Only thin, near-white fringe pixels
+// sitting directly on the transparent boundary are removed (a single pass), so
+// solid white products keep their real edges instead of being chewed away.
+function trimWhiteFringe(blob: Blob, passes = 1): Promise<Blob> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob)
     const img = new Image()
@@ -94,26 +95,19 @@ function erodeWhiteFringe(blob: Blob, passes = 3): Promise<Blob> {
 
       const isTransparent = (i: number) => data[i * 4 + 3] < 20
 
-      const isFringe = (i: number) => {
-        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2], a = data[i * 4 + 3]
+      const isWhiteFringe = (i: number) => {
+        const a = data[i * 4 + 3]
         if (a < 20) return false
-
-        // Near-white fringe (residual white bg on white products)
+        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2]
         const max = Math.max(r, g, b), min = Math.min(r, g, b)
         const sat = max > 0 ? (max - min) / max : 0
-        if (r >= 220 && g >= 220 && b >= 220 && sat < 0.12) return true
-
-        // Green-tinted fringe from #00B140 padding bleed:
-        // green channel dominates, red and blue are lower
-        if (g > r + 30 && g > b + 20 && g > 100) return true
-
-        return false
+        return r >= 230 && g >= 230 && b >= 230 && sat < 0.1
       }
 
       for (let pass = 0; pass < passes; pass++) {
         const toErase: number[] = []
         for (let i = 0; i < w * h; i++) {
-          if (!isFringe(i)) continue
+          if (!isWhiteFringe(i)) continue
           const px = i % w, py = Math.floor(i / w)
           const neighbors = [
             py > 0 ? i - w : -1,
@@ -121,9 +115,7 @@ function erodeWhiteFringe(blob: Blob, passes = 3): Promise<Blob> {
             px > 0 ? i - 1 : -1,
             px < w - 1 ? i + 1 : -1,
           ]
-          if (neighbors.some(n => n >= 0 && isTransparent(n))) {
-            toErase.push(i)
-          }
+          if (neighbors.some((n) => n >= 0 && isTransparent(n))) toErase.push(i)
         }
         for (const i of toErase) data[i * 4 + 3] = 0
         if (toErase.length === 0) break
@@ -137,15 +129,11 @@ function erodeWhiteFringe(blob: Blob, passes = 3): Promise<Blob> {
   })
 }
 
-
-
-// After background removal, award badges/logos may remain as disconnected
-// islands or corner patches. This function removes both types.
-function removeBadgesAndIslands(
-  blob: Blob,
-  islandFraction = 0.04,
-  cornerFrac = 0.30
-): Promise<Blob> {
+// Removes small, disconnected specks the segmentation model sometimes leaves
+// behind (stray shadow/reflection fragments). The largest connected component
+// — the product itself — is always kept, and only islands smaller than
+// `minFraction` of it are cleared, so genuine multi-part products survive.
+function removeSmallIslands(blob: Blob, minFraction = 0.02): Promise<Blob> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob)
     const img = new Image()
@@ -160,176 +148,44 @@ function removeBadgesAndIslands(
 
       const imageData = ctx.getImageData(0, 0, w, h)
       const data = imageData.data
+      const n = w * h
 
-      // ── Helpers ────────────────────────────────────────────────────────
-      function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
-        const rn = r / 255, gn = g / 255, bn = b / 255
-        const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn)
-        const l = (max + min) / 2
-        if (max === min) return [0, 0, l]
-        const d = max - min
-        const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-        let hue = 0
-        if (max === rn) hue = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6
-        else if (max === gn) hue = ((bn - rn) / d + 2) / 6
-        else hue = ((rn - gn) / d + 4) / 6
-        return [hue, s, l]
-      }
+      const mask = new Uint8Array(n)
+      for (let i = 0; i < n; i++) mask[i] = data[i * 4 + 3] > 10 ? 1 : 0
 
-      function pixelSat(i: number): number {
-        const [, s] = rgbToHsl(data[i * 4], data[i * 4 + 1], data[i * 4 + 2])
-        return s
-      }
-
-      function pixelHue(i: number): number {
-        const [h] = rgbToHsl(data[i * 4], data[i * 4 + 1], data[i * 4 + 2])
-        return h
-      }
-
-      const alpha = (i: number) => data[i * 4 + 3]
-
-      // ── 1. Compute overall product dominant hue (from all opaque pixels) ─
-      let totalSat = 0, hueSum = 0, opaquePx = 0
-      for (let i = 0; i < w * h; i++) {
-        if (alpha(i) < 20) continue
-        const sat = pixelSat(i)
-        totalSat += sat
-        hueSum += pixelHue(i) * sat // weighted by saturation
-        opaquePx++
-      }
-      const productDominantHue = opaquePx > 0 ? hueSum / (totalSat || 1) : 0.6
-      const productAvgSat = opaquePx > 0 ? totalSat / opaquePx : 0.1
-
-      // ── 2. BFS connected-component labelling ───────────────────────────
-      const mask = new Uint8Array(w * h)
-      for (let i = 0; i < w * h; i++) {
-        mask[i] = alpha(i) > 10 ? 1 : 0
-      }
-
-      const labels = new Int32Array(w * h).fill(-1)
-      const compSizes: number[] = []
-      const compBounds: Array<{ x0: number; y0: number; x1: number; y1: number }> = []
+      const labels = new Int32Array(n).fill(-1)
+      const sizes: number[] = []
+      const queue = new Int32Array(n)
       let numLabels = 0
-      const queue: number[] = []
 
-      for (let start = 0; start < w * h; start++) {
+      for (let start = 0; start < n; start++) {
         if (mask[start] === 0 || labels[start] !== -1) continue
-        queue.length = 0
-        queue.push(start)
+        let head = 0, tail = 0, size = 0
+        queue[tail++] = start
         labels[start] = numLabels
-        let size = 0, head = 0
-        let bx0 = w, by0 = h, bx1 = 0, by1 = 0
-        while (head < queue.length) {
+        while (head < tail) {
           const idx = queue[head++]
           size++
           const px = idx % w, py = Math.floor(idx / w)
-          if (px < bx0) bx0 = px
-          if (px > bx1) bx1 = px
-          if (py < by0) by0 = py
-          if (py > by1) by1 = py
-          const neighbors = [
-            py > 0 ? idx - w : -1,
-            py < h - 1 ? idx + w : -1,
-            px > 0 ? idx - 1 : -1,
-            px < w - 1 ? idx + 1 : -1,
-          ]
-          for (const n of neighbors) {
-            if (n >= 0 && mask[n] === 1 && labels[n] === -1) {
-              labels[n] = numLabels
-              queue.push(n)
-            }
-          }
+          if (py > 0 && mask[idx - w] && labels[idx - w] === -1) { labels[idx - w] = numLabels; queue[tail++] = idx - w }
+          if (py < h - 1 && mask[idx + w] && labels[idx + w] === -1) { labels[idx + w] = numLabels; queue[tail++] = idx + w }
+          if (px > 0 && mask[idx - 1] && labels[idx - 1] === -1) { labels[idx - 1] = numLabels; queue[tail++] = idx - 1 }
+          if (px < w - 1 && mask[idx + 1] && labels[idx + 1] === -1) { labels[idx + 1] = numLabels; queue[tail++] = idx + 1 }
         }
-        compSizes.push(size)
-        compBounds.push({ x0: bx0, y0: by0, x1: bx1, y1: by1 })
+        sizes.push(size)
         numLabels++
       }
 
-      if (numLabels === 0) {
-        canvas.toBlob((b) => resolve(b ?? blob), "image/png")
-        return
-      }
-
-      const maxSize = Math.max(...compSizes)
-      const erase = new Uint8Array(numLabels)
-
-      // Strategy A: small disconnected islands
-      for (let l = 0; l < numLabels; l++) {
-        if (compSizes[l] < maxSize * islandFraction) erase[l] = 1
-      }
-
-      // ── 3. Corner-region badge detection ─────���────────────────────────
-      // For each of the 4 corners: find ALL opaque pixels in that zone,
-      // measure their average hue & saturation. If the corner zone has:
-      //   - A notably different hue from the overall product
-      //   - Higher saturation than the product average (badges are vivid)
-      //   - A reasonable number of pixels (not just noise)
-      // then erase those pixels.
-      const cz = Math.round(Math.min(w, h) * cornerFrac)
-      const corners = [
-        { x0: 0,     y0: 0,     x1: cz,     y1: cz      }, // top-left
-        { x0: w-cz,  y0: 0,     x1: w,       y1: cz      }, // top-right
-        { x0: 0,     y0: h-cz,  x1: cz,      y1: h       }, // bottom-left
-        { x0: w-cz,  y0: h-cz,  x1: w,       y1: h       }, // bottom-right
-      ]
-
-      for (const corner of corners) {
-        // Collect opaque pixels in this corner zone
-        let zoneOpaque = 0, zoneSatSum = 0, zoneHueSatSum = 0, zoneSatSum2 = 0
-        // Find tight bounding box of opaque pixels in zone
-        let bx0 = corner.x1, by0 = corner.y1, bx1 = corner.x0, by1 = corner.y0
-
-        for (let cy = corner.y0; cy < corner.y1; cy++) {
-          for (let cx = corner.x0; cx < corner.x1; cx++) {
-            const i = cy * w + cx
-            if (alpha(i) < 20) continue
-            const sat = pixelSat(i)
-            const hue = pixelHue(i)
-            zoneSatSum += sat
-            zoneHueSatSum += hue * sat
-            zoneSatSum2 += sat
-            zoneOpaque++
-            if (cx < bx0) bx0 = cx
-            if (cx > bx1) bx1 = cx
-            if (cy < by0) by0 = cy
-            if (cy > by1) by1 = cy
-          }
+      if (numLabels > 1) {
+        const maxSize = Math.max(...sizes)
+        const threshold = maxSize * minFraction
+        for (let i = 0; i < n; i++) {
+          const l = labels[i]
+          if (l !== -1 && sizes[l] < threshold) data[i * 4 + 3] = 0
         }
-
-        if (zoneOpaque < 80) continue // too few pixels to be a badge
-
-        const zoneAvgSat = zoneSatSum / zoneOpaque
-        const zoneDomHue = zoneSatSum2 > 0 ? zoneHueSatSum / zoneSatSum2 : 0
-
-        // Hue difference (circular, 0–1 range)
-        const hueDiff = Math.min(Math.abs(zoneDomHue - productDominantHue), 1 - Math.abs(zoneDomHue - productDominantHue))
-
-        // Badge zone conditions (strict — only vivid coloured award badges):
-        //  - Highly saturated AND clearly different hue from the product
-        //  - Small area (< 6% of image) to never erase the machine itself
-        const zoneArea = (bx1 - bx0 + 1) * (by1 - by0 + 1)
-        const isVivid = zoneAvgSat > Math.max(0.40, productAvgSat + 0.25)
-        const isDifferentHue = hueDiff > 0.12 && zoneAvgSat > 0.35
-        const isSmallEnough = zoneArea < w * h * 0.06
-
-        if ((isVivid || isDifferentHue) && isSmallEnough) {
-          // Erase all opaque pixels in the tight bounding box of this corner zone
-          for (let cy = by0; cy <= by1; cy++) {
-            for (let cx = bx0; cx <= bx1; cx++) {
-              const i = cy * w + cx
-              if (alpha(i) > 0) data[i * 4 + 3] = 0
-            }
-          }
-        }
+        ctx.putImageData(imageData, 0, 0)
       }
 
-      // ── 4. Apply BFS island erasure ────────────────────────────────────
-      for (let i = 0; i < w * h; i++) {
-        const l = labels[i]
-        if (l !== -1 && erase[l]) data[i * 4 + 3] = 0
-      }
-
-      ctx.putImageData(imageData, 0, 0)
       canvas.toBlob((b) => resolve(b ?? blob), "image/png")
     }
     img.onerror = () => resolve(blob)
@@ -348,21 +204,8 @@ export function ProductCompositor() {
   const [transparentBg, setTransparentBg] = useState(false)
   const [padding, setPadding] = useState(30)
   const [gap, setGap] = useState(20)
+  const [showPlus, setShowPlus] = useState(true)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-
-  // Configure onnxruntime-web to use a single thread.
-  // Multi-threading requires crossOriginIsolated (COOP/COEP headers) which
-  // are not set in this environment. Setting numThreads=1 before any
-  // removeBackground() call prevents the warning and ensures correct behaviour.
-  useEffect(() => {
-    import("onnxruntime-web").then((ort) => {
-      ort.env.wasm.numThreads = 1
-    }).catch(() => {
-      // onnxruntime-web may not be directly importable; the bg-removal
-      // library bundles its own copy. The warning is benign — the library
-      // falls back to single-threading automatically.
-    })
-  }, [])
 
   const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
     canvasRef.current = canvas
@@ -398,7 +241,7 @@ export function ProductCompositor() {
       await new Promise<void>((r) => setTimeout(r, 0))
 
       try {
-        // Step 1: normalise format + add padding
+        // Step 1: normalise format + downscale very large images
         const pngDataUrl = await normalizeImageToPng(dataUrl)
 
         setImages((prev) => {
@@ -410,7 +253,7 @@ export function ProductCompositor() {
         // Yield again before the heavy ONNX inference
         await new Promise<void>((r) => setTimeout(r, 0))
 
-        // Step 2: AI background removal using full-precision ISNet model
+        // Step 2: AI background removal using the full-precision ISNet model
         // (isnet_fp16 struggles with white-on-white; full isnet is more accurate)
         const rawBlob = await removeBackground(pngDataUrl, {
           model: "isnet",
@@ -423,10 +266,9 @@ export function ProductCompositor() {
           return next
         })
 
-        // Remove residual white fringe (AI sometimes leaves white border on white products)
-        const fringeBlob = await erodeWhiteFringe(rawBlob)
-        // Remove leftover disconnected islands and corner badges
-        const blob = await removeBadgesAndIslands(fringeBlob)
+        // Step 3: gentle cleanup — trim any thin white halo, then drop stray specks
+        const fringeBlob = await trimWhiteFringe(rawBlob)
+        const blob = await removeSmallIslands(fringeBlob)
         const url = URL.createObjectURL(blob)
         const img = await loadImage(url)
 
@@ -562,6 +404,7 @@ export function ProductCompositor() {
               transparent={transparentBg}
               padding={padding}
               gap={gap}
+              showPlus={showPlus}
               onCanvasReady={handleCanvasReady}
             />
 
@@ -590,6 +433,28 @@ export function ProductCompositor() {
                     checked={autoRemoveBg}
                     onCheckedChange={setAutoRemoveBg}
                     aria-label="Automatisk bakgrundsborttagning"
+                  />
+                </div>
+
+                <div className="h-px bg-border" />
+
+                {/* Plus separator toggle */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-accent" />
+                    <div>
+                      <Label className="text-sm font-medium cursor-pointer">
+                        Visa plustecken
+                      </Label>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Lagger ett "+" mellan produkterna
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={showPlus}
+                    onCheckedChange={setShowPlus}
+                    aria-label="Visa plustecken mellan produkterna"
                   />
                 </div>
 

@@ -10,10 +10,15 @@ interface CompositorCanvasProps {
   transparent: boolean
   padding: number
   gap: number
+  showPlus: boolean
   onCanvasReady: (canvas: HTMLCanvasElement) => void
 }
 
 const OUTPUT_SIZE = 1000
+// Size of the "+" separator relative to the canvas, and how thick its bars are.
+const PLUS_SIZE_FRAC = 0.12
+const PLUS_BAR_FRAC = 0.26
+const PLUS_COLOR = "#b6bac1"
 
 /**
  * Returns the tight bounding box of non-transparent pixels in an image.
@@ -67,6 +72,19 @@ function getContentBounds(
   }
 }
 
+/** Draws a rounded "+" separator centred at (cx, cy). */
+function drawPlus(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
+  const bar = size * PLUS_BAR_FRAC
+  const r = bar / 2
+  ctx.save()
+  ctx.fillStyle = PLUS_COLOR
+  ctx.beginPath()
+  ctx.roundRect(cx - size / 2, cy - bar / 2, size, bar, r)
+  ctx.roundRect(cx - bar / 2, cy - size / 2, bar, size, r)
+  ctx.fill()
+  ctx.restore()
+}
+
 export function CompositorCanvas({
   leftImage,
   rightImage,
@@ -74,6 +92,7 @@ export function CompositorCanvas({
   transparent,
   padding,
   gap,
+  showPlus,
   onCanvasReady,
 }: CompositorCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -120,10 +139,16 @@ export function CompositorCanvas({
       let drawWR = boundsR.w * scaleR
       let drawHR = boundsR.h * scaleR
 
-      // If the combined width exceeds available width, shrink both proportionally
-      const totalW = drawWL + gap + drawWR
+      // Reserve space for the "+" separator (with breathing room either side).
+      const plusSize = showPlus ? OUTPUT_SIZE * PLUS_SIZE_FRAC : 0
+      const sepW = showPlus ? plusSize + gap * 2 : gap
+
+      // If the combined width exceeds available width, shrink the images
+      // (never the separator) proportionally so the "+" stays readable.
+      const totalW = drawWL + sepW + drawWR
       if (totalW > availableW) {
-        const shrink = availableW / totalW
+        const imgAllowed = Math.max(1, availableW - sepW)
+        const shrink = imgAllowed / (drawWL + drawWR)
         drawWL *= shrink
         drawHL *= shrink
         drawWR *= shrink
@@ -131,7 +156,7 @@ export function CompositorCanvas({
       }
 
       // Center the pair horizontally; center each product vertically independently
-      const pairW = drawWL + gap + drawWR
+      const pairW = drawWL + sepW + drawWR
       const startX = padding + (availableW - pairW) / 2
       const centerY = padding + availableH / 2
 
@@ -152,11 +177,15 @@ export function CompositorCanvas({
         boundsR.y,
         boundsR.w,
         boundsR.h,
-        startX + drawWL + gap,
+        startX + drawWL + sepW,
         centerY - drawHR / 2,
         drawWR,
         drawHR
       )
+
+      if (showPlus) {
+        drawPlus(ctx, startX + drawWL + sepW / 2, centerY, plusSize)
+      }
     } else {
       const img = (leftImage || rightImage)!
       const bounds = getContentBounds(img)
@@ -177,7 +206,7 @@ export function CompositorCanvas({
     }
 
     onCanvasReady(canvas)
-  }, [leftImage, rightImage, backgroundColor, transparent, padding, gap, onCanvasReady])
+  }, [leftImage, rightImage, backgroundColor, transparent, padding, gap, showPlus, onCanvasReady])
 
   return (
     <div className="flex flex-col gap-2">
