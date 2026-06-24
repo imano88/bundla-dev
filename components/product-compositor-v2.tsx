@@ -129,6 +129,40 @@ function trimWhiteFringe(blob: Blob, passes = 1): Promise<Blob> {
   })
 }
 
+// Removes faint "ghost" remnants — regions of low, near-transparent alpha that
+// the matting model leaves where the background should be fully clear (often a
+// barely-visible silhouette beside the product). Any pixel below the alpha floor
+// is made fully transparent; solid product pixels and genuine edge anti-aliasing
+// (alpha >= floor) are left untouched.
+function dropFaintPixels(blob: Blob, floor = 60): Promise<Blob> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(blob)
+    const img = new Image()
+    img.onload = () => {
+      const { naturalWidth: w, naturalHeight: h } = img
+      const canvas = document.createElement("canvas")
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext("2d", { willReadFrequently: true })!
+      ctx.drawImage(img, 0, 0)
+      URL.revokeObjectURL(url)
+      const imageData = ctx.getImageData(0, 0, w, h)
+      const data = imageData.data
+      let changed = false
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] > 0 && data[i] < floor) {
+          data[i] = 0
+          changed = true
+        }
+      }
+      if (changed) ctx.putImageData(imageData, 0, 0)
+      canvas.toBlob((b) => resolve(b ?? blob), "image/png")
+    }
+    img.onerror = () => resolve(blob)
+    img.src = url
+  })
+}
+
 // Removes small, disconnected specks the segmentation model sometimes leaves
 // behind (stray shadow/reflection fragments). The largest connected component
 // — the product itself — is always kept, and only islands smaller than
@@ -264,8 +298,10 @@ export function ProductCompositor() {
           return next
         })
 
-        // Step 3: gentle cleanup — trim any thin white halo, then drop stray specks
-        const fringeBlob = await trimWhiteFringe(rawBlob)
+        // Step 3: cleanup — kill faint ghost remnants, trim any thin white halo,
+        // then drop stray specks/islands.
+        const ghostFreeBlob = await dropFaintPixels(rawBlob)
+        const fringeBlob = await trimWhiteFringe(ghostFreeBlob)
         const blob = await removeSmallIslands(fringeBlob)
         const url = URL.createObjectURL(blob)
         const img = await loadImage(url)
