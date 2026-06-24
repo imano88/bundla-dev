@@ -129,12 +129,12 @@ function trimWhiteFringe(blob: Blob, passes = 1): Promise<Blob> {
   })
 }
 
-// Removes faint "ghost" remnants — regions of low, near-transparent alpha that
-// the matting model leaves where the background should be fully clear (often a
-// barely-visible silhouette beside the product). Any pixel below the alpha floor
-// is made fully transparent; solid product pixels and genuine edge anti-aliasing
-// (alpha >= floor) are left untouched.
-function dropFaintPixels(blob: Blob, floor = 60): Promise<Blob> {
+// Cleans up the AI matte's alpha channel with a levels curve:
+//   - alpha <= low   -> 0   (kills faint "ghost" remnants)
+//   - alpha >= high  -> 255 (makes the product interior fully opaque, so shiny
+//                            surfaces don't look mottled/"flammiga" on a solid bg)
+//   - in between     -> smooth ramp, preserving a thin anti-aliased edge.
+function refineMatteAlpha(blob: Blob, low = 40, high = 120): Promise<Blob> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob)
     const img = new Image()
@@ -148,14 +148,14 @@ function dropFaintPixels(blob: Blob, floor = 60): Promise<Blob> {
       URL.revokeObjectURL(url)
       const imageData = ctx.getImageData(0, 0, w, h)
       const data = imageData.data
-      let changed = false
+      const span = Math.max(1, high - low)
       for (let i = 3; i < data.length; i += 4) {
-        if (data[i] > 0 && data[i] < floor) {
-          data[i] = 0
-          changed = true
-        }
+        const a = data[i]
+        if (a <= low) data[i] = 0
+        else if (a >= high) data[i] = 255
+        else data[i] = Math.round(((a - low) / span) * 255)
       }
-      if (changed) ctx.putImageData(imageData, 0, 0)
+      ctx.putImageData(imageData, 0, 0)
       canvas.toBlob((b) => resolve(b ?? blob), "image/png")
     }
     img.onerror = () => resolve(blob)
@@ -298,10 +298,10 @@ export function ProductCompositor() {
           return next
         })
 
-        // Step 3: cleanup — kill faint ghost remnants, trim any thin white halo,
-        // then drop stray specks/islands.
-        const ghostFreeBlob = await dropFaintPixels(rawBlob)
-        const fringeBlob = await trimWhiteFringe(ghostFreeBlob)
+        // Step 3: cleanup — refine the matte alpha (kill ghosts, solidify the
+        // interior), trim any thin white halo, then drop stray specks/islands.
+        const refinedBlob = await refineMatteAlpha(rawBlob)
+        const fringeBlob = await trimWhiteFringe(refinedBlob)
         const blob = await removeSmallIslands(fringeBlob)
         const url = URL.createObjectURL(blob)
         const img = await loadImage(url)

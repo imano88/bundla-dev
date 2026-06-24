@@ -17,8 +17,8 @@ interface CompositorCanvasProps {
 const OUTPUT_SIZE = 1000
 // Size of the "+" separator relative to the canvas, and how thick its bars are.
 const PLUS_SIZE_FRAC = 0.12
-const PLUS_BAR_FRAC = 0.26
-const PLUS_COLOR = "#b6bac1"
+const PLUS_BAR_FRAC = 0.32
+const PLUS_COLOR = "#a8a8a8"
 
 /**
  * Returns the tight bounding box of non-transparent pixels in an image.
@@ -72,16 +72,18 @@ function getContentBounds(
   }
 }
 
-/** Draws a rounded "+" separator centred at (cx, cy). */
+/** Draws a sharp-cornered "+" separator centred at (cx, cy). */
 function drawPlus(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
-  const bar = size * PLUS_BAR_FRAC
-  const r = bar / 2
+  const bar = Math.round(size * PLUS_BAR_FRAC)
+  const full = Math.round(size)
+  const x = Math.round(cx - full / 2)
+  const y = Math.round(cy - full / 2)
+  const barOffset = Math.round(cy - bar / 2) // shared centre line for both bars
   ctx.save()
   ctx.fillStyle = PLUS_COLOR
-  ctx.beginPath()
-  ctx.roundRect(cx - size / 2, cy - bar / 2, size, bar, r)
-  ctx.roundRect(cx - bar / 2, cy - size / 2, bar, size, r)
-  ctx.fill()
+  // Integer coords + square corners keep the cross crisp (no rounded edges).
+  ctx.fillRect(x, barOffset, full, bar) // horizontal bar
+  ctx.fillRect(Math.round(cx - bar / 2), y, bar, full) // vertical bar
   ctx.restore()
 }
 
