@@ -110,7 +110,7 @@ export function ImageDropZone({
             </div>
             <div>
               <p className="text-sm font-medium text-foreground">
-                {isDragging ? "Slapp bilden har" : label}
+                {isDragging ? "Släpp bilden här" : label}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 PNG, WebP, JPG upp till 20 MB

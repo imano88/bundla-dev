@@ -213,7 +213,7 @@ export function CompositorCanvas({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">Forhandsgranskning</span>
+        <span className="text-sm font-medium text-foreground">Förhandsgranskning</span>
         {hasContent && (
           <span className="text-xs text-muted-foreground">1000 × 1000 px</span>
         )}
@@ -234,7 +234,7 @@ export function CompositorCanvas({
         {!hasContent && (
           <div className="absolute inset-0 flex items-center justify-center">
             <p className="text-sm text-muted-foreground px-4 text-center">
-              Ladda upp bilder for att se forhandsgranskingen
+              Ladda upp bilder för att se förhandsgranskningen
             </p>
           </div>
         )}

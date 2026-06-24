@@ -24,11 +24,11 @@ interface ImageState {
 
 const PRESET_COLORS = [
   { label: "Vit", value: "#ffffff" },
-  { label: "Ljusgra", value: "#f5f5f5" },
-  { label: "Ljusbla", value: "#e8f0fe" },
+  { label: "Ljusgrå", value: "#f5f5f5" },
+  { label: "Ljusblå", value: "#e8f0fe" },
   { label: "Beige", value: "#fdf8f0" },
   { label: "Svart", value: "#1a1a1a" },
-  { label: "Marinbla", value: "#0f2044" },
+  { label: "Marinblå", value: "#0f2044" },
 ]
 
 function makeEmptyState(): ImageState {
@@ -235,7 +235,7 @@ export function ProductCompositor() {
   const [autoRemoveBg, setAutoRemoveBg] = useState(true)
   const [bgColor, setBgColor] = useState("#ffffff")
   const [customColor, setCustomColor] = useState("#ffffff")
-  const [transparentBg, setTransparentBg] = useState(false)
+  const [transparentBg, setTransparentBg] = useState(true)
   const [padding, setPadding] = useState(30)
   const [gap, setGap] = useState(20)
   const [showPlus, setShowPlus] = useState(true)
@@ -321,7 +321,7 @@ export function ProductCompositor() {
             ...next[index],
             element: fallbackEl,
             status: "error",
-            error: "Bakgrundsborttagning misslyckades - anvander originalbild.",
+            error: "Bakgrundsborttagning misslyckades – använder originalbild.",
           }
           return next
         })
@@ -384,7 +384,7 @@ export function ProductCompositor() {
           <div>
             <h1 className="text-lg font-semibold text-foreground">Bildkompositor</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Kombinera tva produktbilder for bundlingens produktsida
+              Kombinera två produktbilder för bundlingens produktsida
             </p>
           </div>
           <Button
@@ -407,7 +407,7 @@ export function ProductCompositor() {
           {/* Left image upload */}
           <div className="flex flex-col gap-4">
             <ImageDropZone
-              label="Dra och slapp eller klicka for att valja"
+              label="Dra och släpp eller klicka för att välja"
               image={displayLeft}
               onImageChange={(url, file) => handleImageChange(url, file, 0)}
               onRemove={() => handleRemove(0)}
@@ -419,7 +419,7 @@ export function ProductCompositor() {
           {/* Right image upload */}
           <div className="flex flex-col gap-4">
             <ImageDropZone
-              label="Dra och slapp eller klicka for att valja"
+              label="Dra och släpp eller klicka för att välja"
               image={displayRight}
               onImageChange={(url, file) => handleImageChange(url, file, 1)}
               onRemove={() => handleRemove(1)}
@@ -446,7 +446,7 @@ export function ProductCompositor() {
             <div className="rounded-lg border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-2">
                 <Settings2 className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold text-foreground">Installningar</h2>
+                <h2 className="text-sm font-semibold text-foreground">Inställningar</h2>
               </div>
 
               <div className="flex flex-col gap-5">
@@ -481,7 +481,7 @@ export function ProductCompositor() {
                         Visa plustecken
                       </Label>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        Lagger ett "+" mellan produkterna
+                        Lägger ett "+" mellan produkterna
                       </p>
                     </div>
                   </div>
@@ -496,7 +496,7 @@ export function ProductCompositor() {
 
                 {/* Background color */}
                 <div className="flex flex-col gap-3">
-                  <Label className="text-sm font-medium">Bakgrundsfarg</Label>
+                  <Label className="text-sm font-medium">Bakgrundsfärg</Label>
 
                   {/* Transparent option */}
                   <button
@@ -521,7 +521,7 @@ export function ProductCompositor() {
                       <button
                         key={color.value}
                         title={color.label}
-                        aria-label={`Bakgrundsfarg: ${color.label}`}
+                        aria-label={`Bakgrundsfärg: ${color.label}`}
                         onClick={() => handleColorChange(color.value)}
                         className={cn(
                           "aspect-square rounded-md border-2 transition-all hover:scale-110",
@@ -541,7 +541,7 @@ export function ProductCompositor() {
                         value={customColor}
                         onChange={(e) => handleColorChange(e.target.value)}
                         className="h-8 w-8 cursor-pointer rounded border border-border p-0.5 bg-card"
-                        aria-label="Valfri bakgrundsfarg"
+                        aria-label="Valfri bakgrundsfärg"
                       />
                     </div>
                     <span className="text-xs font-mono text-muted-foreground">
@@ -612,7 +612,7 @@ function ImageStatusBadge({ state }: { state: ImageState }) {
   const isProcessing = ["normalizing", "segmenting", "cleaning"].includes(state.status)
 
   const stepLabel: Record<string, string> = {
-    normalizing: "Forbereder bild...",
+    normalizing: "Förbereder bild...",
     segmenting: "AI klipper ut produkten...",
     cleaning: "Rensar kanter...",
   }
