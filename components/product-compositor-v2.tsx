@@ -74,11 +74,17 @@ async function normalizeImageToPng(src: string): Promise<string> {
   return canvas.toDataURL("image/png")
 }
 
-// Trims a light residual halo that segmentation can leave around products that
-// were photographed on a white background. Only thin, near-white fringe pixels
-// sitting directly on the transparent boundary are removed (a single pass), so
-// solid white products keep their real edges instead of being chewed away.
-function trimWhiteFringe(blob: Blob, passes = 1): Promise<Blob> {
+// Refines the AI matte using border flood-fill. The true background is the
+// transparent area that connects to the image edge; everything enclosed by the
+// product silhouette is treated as product. This is the key to handling white
+// products on a white background, where the model often leaves the product body
+// faint/semi-transparent:
+//   - Background (low alpha connected to the border) -> fully transparent.
+//   - Product interior (incl. faint/ghosted body the model dropped) -> opaque,
+//     which also removes "flammighet" on shiny surfaces.
+//   - A thin edge band keeps the model's natural anti-aliased alpha, so edges
+//     stay smooth instead of choppy.
+function refineMatte(blob: Blob, bgThreshold = 40, rim = 2): Promise<Blob> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob)
     const img = new Image()
@@ -92,69 +98,63 @@ function trimWhiteFringe(blob: Blob, passes = 1): Promise<Blob> {
       URL.revokeObjectURL(url)
       const imageData = ctx.getImageData(0, 0, w, h)
       const data = imageData.data
+      const n = w * h
 
-      const isTransparent = (i: number) => data[i * 4 + 3] < 20
-
-      const isWhiteFringe = (i: number) => {
-        const a = data[i * 4 + 3]
-        if (a < 20) return false
-        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2]
-        const max = Math.max(r, g, b), min = Math.min(r, g, b)
-        const sat = max > 0 ? (max - min) / max : 0
-        return r >= 230 && g >= 230 && b >= 230 && sat < 0.1
-      }
-
-      for (let pass = 0; pass < passes; pass++) {
-        const toErase: number[] = []
-        for (let i = 0; i < w * h; i++) {
-          if (!isWhiteFringe(i)) continue
-          const px = i % w, py = Math.floor(i / w)
-          const neighbors = [
-            py > 0 ? i - w : -1,
-            py < h - 1 ? i + w : -1,
-            px > 0 ? i - 1 : -1,
-            px < w - 1 ? i + 1 : -1,
-          ]
-          if (neighbors.some((n) => n >= 0 && isTransparent(n))) toErase.push(i)
+      // 1. Flood-fill the background from the border, travelling only through
+      //    near-transparent pixels (alpha < bgThreshold).
+      const outside = new Uint8Array(n)
+      const stack: number[] = []
+      const trySeed = (i: number) => {
+        if (!outside[i] && data[i * 4 + 3] < bgThreshold) {
+          outside[i] = 1
+          stack.push(i)
         }
-        for (const i of toErase) data[i * 4 + 3] = 0
-        if (toErase.length === 0) break
+      }
+      for (let x = 0; x < w; x++) {
+        trySeed(x)
+        trySeed((h - 1) * w + x)
+      }
+      for (let y = 0; y < h; y++) {
+        trySeed(y * w)
+        trySeed(y * w + w - 1)
+      }
+      while (stack.length) {
+        const i = stack.pop()!
+        const px = i % w, py = (i / w) | 0
+        if (py > 0) trySeed(i - w)
+        if (py < h - 1) trySeed(i + w)
+        if (px > 0) trySeed(i - 1)
+        if (px < w - 1) trySeed(i + 1)
       }
 
-      ctx.putImageData(imageData, 0, 0)
-      canvas.toBlob((b) => resolve(b ?? blob), "image/png")
-    }
-    img.onerror = () => resolve(blob)
-    img.src = url
-  })
-}
-
-// Cleans up the AI matte's alpha channel with a levels curve:
-//   - alpha <= low   -> 0   (kills faint "ghost" remnants)
-//   - alpha >= high  -> 255 (makes the product interior fully opaque, so shiny
-//                            surfaces don't look mottled/"flammiga" on a solid bg)
-//   - in between     -> smooth ramp, preserving a thin anti-aliased edge.
-function refineMatteAlpha(blob: Blob, low = 40, high = 120): Promise<Blob> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(blob)
-    const img = new Image()
-    img.onload = () => {
-      const { naturalWidth: w, naturalHeight: h } = img
-      const canvas = document.createElement("canvas")
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext("2d", { willReadFrequently: true })!
-      ctx.drawImage(img, 0, 0)
-      URL.revokeObjectURL(url)
-      const imageData = ctx.getImageData(0, 0, w, h)
-      const data = imageData.data
-      const span = Math.max(1, high - low)
-      for (let i = 3; i < data.length; i += 4) {
-        const a = data[i]
-        if (a <= low) data[i] = 0
-        else if (a >= high) data[i] = 255
-        else data[i] = Math.round(((a - low) / span) * 255)
+      // 2. Dilate the background region by `rim` px -> the thin edge band where
+      //    we keep the model's natural (smooth) alpha.
+      let near = outside.slice()
+      for (let pass = 0; pass < rim; pass++) {
+        const next = near.slice()
+        for (let i = 0; i < n; i++) {
+          if (near[i]) continue
+          const px = i % w, py = (i / w) | 0
+          if (
+            (py > 0 && near[i - w]) ||
+            (py < h - 1 && near[i + w]) ||
+            (px > 0 && near[i - 1]) ||
+            (px < w - 1 && near[i + 1])
+          ) {
+            next[i] = 1
+          }
+        }
+        near = next
       }
+
+      // 3. Compose: background -> 0, edge band -> keep natural alpha, deep
+      //    interior -> fully opaque.
+      for (let i = 0; i < n; i++) {
+        if (outside[i]) data[i * 4 + 3] = 0
+        else if (!near[i]) data[i * 4 + 3] = 255
+        // else: edge band, keep the model's natural alpha for smooth edges
+      }
+
       ctx.putImageData(imageData, 0, 0)
       canvas.toBlob((b) => resolve(b ?? blob), "image/png")
     }
@@ -298,11 +298,11 @@ export function ProductCompositor() {
           return next
         })
 
-        // Step 3: cleanup — refine the matte alpha (kill ghosts, solidify the
-        // interior), trim any thin white halo, then drop stray specks/islands.
-        const refinedBlob = await refineMatteAlpha(rawBlob)
-        const fringeBlob = await trimWhiteFringe(refinedBlob)
-        const blob = await removeSmallIslands(fringeBlob)
+        // Step 3: cleanup — border flood-fill refine (recovers faint white
+        // bodies, kills ghosts, solidifies interior, keeps edges smooth), then
+        // drop stray specks/islands.
+        const refinedBlob = await refineMatte(rawBlob)
+        const blob = await removeSmallIslands(refinedBlob)
         const url = URL.createObjectURL(blob)
         const img = await loadImage(url)
 
