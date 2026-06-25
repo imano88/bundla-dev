@@ -25,13 +25,15 @@ export function LoginForm() {
         options: { emailRedirectTo: redirectTo },
       })
       if (error) {
-        setError("Kunde inte skicka länken. Försök igen.")
+        console.error("signInWithOtp error:", error)
+        setError(error.message || "Kunde inte skicka länken. Försök igen.")
         setLoading(false)
       } else {
         setSent(true)
       }
-    } catch {
-      setError("Något gick fel. Försök igen.")
+    } catch (err) {
+      console.error("login error:", err)
+      setError(err instanceof Error ? err.message : "Något gick fel. Försök igen.")
       setLoading(false)
     }
   }
