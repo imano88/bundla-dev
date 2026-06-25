@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
@@ -23,6 +23,10 @@ export const metadata: Metadata = {
     title: 'Bundla: Två produktbilder. En färdig bundle.',
     description: 'Automatisk friläggning och bundling-bilder för e-handel.',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#f4f0e9',
 }
 
 export default function RootLayout({
