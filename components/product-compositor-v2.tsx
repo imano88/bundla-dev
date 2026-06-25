@@ -358,13 +358,13 @@ export function ProductCompositor() {
   const [gap, setGap] = useState(20)
   const [showPlus, setShowPlus] = useState(true)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const [usage, setUsage] = useState<{ used: number; quota: number } | null>(null)
+  const [usage, setUsage] = useState<{ used: number; quota: number; isAdmin?: boolean } | null>(null)
 
   const refreshUsage = useCallback(() => {
     fetch("/api/usage")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (d?.hasOrg) setUsage({ used: d.used, quota: d.quota })
+        if (d?.hasOrg) setUsage({ used: d.used, quota: d.quota, isAdmin: d.isAdmin })
       })
       .catch(() => {})
   }, [])
@@ -524,6 +524,14 @@ export function ProductCompositor() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {usage?.isAdmin && (
+            <a
+              href="/studio/team"
+              className="hidden text-sm font-semibold text-ink-body transition-colors hover:text-ink sm:inline"
+            >
+              Team
+            </a>
+          )}
           {usage && usage.quota > 0 && (
             <span
               className="hidden font-mono text-[11px] text-ink-muted sm:inline"

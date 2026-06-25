@@ -14,12 +14,14 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("org_id")
+    .select("org_id, role, is_platform_admin")
     .eq("id", user.id)
     .maybeSingle()
 
+  const isAdmin = profile?.role === "admin" || profile?.is_platform_admin === true
+
   if (!profile?.org_id) {
-    return Response.json({ hasOrg: false, used: 0, quota: 0 })
+    return Response.json({ hasOrg: false, used: 0, quota: 0, isAdmin })
   }
 
   const period = new Date().toISOString().slice(0, 7) // YYYY-MM
@@ -37,5 +39,6 @@ export async function GET() {
     hasOrg: true,
     used: counter?.used ?? 0,
     quota: org?.monthly_quota ?? 0,
+    isAdmin,
   })
 }
