@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export function LoginForm() {
-  const router = useRouter()
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("")
+  const [sent, setSent] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -15,45 +15,56 @@ export function LoginForm() {
     setError("")
     setLoading(true)
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ password }),
+      const supabase = createClient()
+      const next = new URLSearchParams(window.location.search).get("next")
+      const redirectTo = `${window.location.origin}/auth/callback${
+        next && next.startsWith("/") ? `?next=${encodeURIComponent(next)}` : ""
+      }`
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: redirectTo },
       })
-      if (res.ok) {
-        const next = new URLSearchParams(window.location.search).get("next")
-        router.push(next && next.startsWith("/") ? next : "/studio")
-        router.refresh()
-        return
+      if (error) {
+        setError("Kunde inte skicka länken. Försök igen.")
+        setLoading(false)
+      } else {
+        setSent(true)
       }
-      const data = await res.json().catch(() => ({}))
-      setError(data?.message ?? "Kunde inte logga in.")
     } catch {
       setError("Något gick fel. Försök igen.")
-    } finally {
       setLoading(false)
     }
+  }
+
+  if (sent) {
+    return (
+      <div className="rounded-[14px] bg-[var(--tint-orange)] px-4 py-4 text-sm text-ink-body">
+        Kolla din mejl — vi har skickat en inloggningslänk till <strong>{email}</strong>. Öppna den på
+        den här enheten för att logga in.
+      </div>
+    )
   }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Lösenord"
+        type="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="namn@företag.se"
         autoFocus
-        aria-label="Lösenord"
+        aria-label="E-postadress"
         className="w-full rounded-[11px] border border-[var(--line-warm)] bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-[var(--bundla-orange)]"
       />
       {error && <p className="text-xs text-[var(--bundla-orange-deep)]">{error}</p>}
       <button
         type="submit"
-        disabled={loading || !password}
+        disabled={loading || !email}
         className="btn-brand inline-flex w-full items-center justify-center gap-2 rounded-[11px] px-4 py-3 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50"
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        Logga in
+        Skicka inloggningslänk
       </button>
     </form>
   )

@@ -1,24 +1,45 @@
+import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-// Interim access gate: the Studio and the paid friläggnings-endpoint require a
-// valid session cookie (set by /api/login after the shared password is entered).
-// The marketing pages stay public. Fails closed if the env vars are unset.
-export function middleware(req: NextRequest) {
-  const session = req.cookies.get("bundla_session")?.value
-  const secret = process.env.APP_SESSION_SECRET
-  if (secret && session === secret) {
-    return NextResponse.next()
+// Refreshes the Supabase session and gates the Studio + the paid endpoint:
+// a valid session is required, otherwise redirect to /login (pages) or 401 (api).
+// Marketing pages stay public.
+export async function middleware(req: NextRequest) {
+  let res = NextResponse.next({ request: req })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value))
+          res = NextResponse.next({ request: req })
+          cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options))
+        },
+      },
+    }
+  )
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    const { pathname, search } = req.nextUrl
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 })
+    }
+    const url = req.nextUrl.clone()
+    url.pathname = "/login"
+    url.search = `?next=${encodeURIComponent(pathname + search)}`
+    return NextResponse.redirect(url)
   }
 
-  const { pathname, search } = req.nextUrl
-  if (pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
-  }
-
-  const url = req.nextUrl.clone()
-  url.pathname = "/login"
-  url.search = `?next=${encodeURIComponent(pathname + search)}`
-  return NextResponse.redirect(url)
+  return res
 }
 
 export const config = {

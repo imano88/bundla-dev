@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { Download, Loader2, Info, AlertCircle, Wand2 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
@@ -358,6 +358,20 @@ export function ProductCompositor() {
   const [gap, setGap] = useState(20)
   const [showPlus, setShowPlus] = useState(true)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const [usage, setUsage] = useState<{ used: number; quota: number } | null>(null)
+
+  const refreshUsage = useCallback(() => {
+    fetch("/api/usage")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.hasOrg) setUsage({ used: d.used, quota: d.quota })
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    refreshUsage()
+  }, [refreshUsage])
 
   const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
     canvasRef.current = canvas
@@ -435,8 +449,10 @@ export function ProductCompositor() {
         if (haveB) next[1] = { ...next[1], status: "error", error: message }
         return next
       })
+    } finally {
+      refreshUsage()
     }
-  }, [images])
+  }, [images, refreshUsage])
 
   const handleImageChange = (dataUrl: string, file: File, index: 0 | 1) => {
     processImage(dataUrl, file, index)
@@ -508,6 +524,14 @@ export function ProductCompositor() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {usage && usage.quota > 0 && (
+            <span
+              className="hidden font-mono text-[11px] text-ink-muted sm:inline"
+              title="Förbrukade bundles denna månad"
+            >
+              {usage.used} / {usage.quota}
+            </span>
+          )}
           <a
             href="/docs"
             className="hidden items-center gap-2 rounded-[11px] border border-[var(--line-strong)] bg-white px-4 py-2.5 text-sm font-semibold text-ink-body transition-colors hover:bg-[var(--surface)] sm:inline-flex"

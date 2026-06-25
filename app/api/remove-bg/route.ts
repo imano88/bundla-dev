@@ -1,13 +1,14 @@
 import { NextRequest } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 
-// Server-side proxy to Photoroom's background-removal API. The API key is read
-// from the PHOTOROOM_API_KEY environment variable and never reaches the client.
+// Server-side background-removal proxy. The API key is read from the environment
+// and never reaches the client. Requires a logged-in user and consumes one
+// monthly credit from the user's organisation (refunded if the call fails).
 export const runtime = "nodejs"
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
-  // Stopgap until auth is live: only allow same-origin calls (our own app) so
-  // the paid endpoint can't easily be hammered by third-party sites.
+  // Only allow same-origin calls (our own app).
   const origin = req.headers.get("origin")
   const host = req.headers.get("host")
   if (!origin || !host) {
@@ -39,6 +40,37 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "empty_image" }, { status: 400 })
   }
 
+  // Auth + quota: reserve one credit before doing the paid work.
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return Response.json({ error: "unauthorized" }, { status: 401 })
+  }
+
+  const { data: consumeData, error: consumeError } = await supabase.rpc("consume_credit")
+  const quota = Array.isArray(consumeData) ? consumeData[0] : consumeData
+  if (consumeError || !quota?.allowed) {
+    return Response.json(
+      {
+        error: "quota",
+        message: quota
+          ? "Månadskvoten är slut. Hör av dig för att utöka."
+          : "Du har inte åtkomst till friläggning.",
+      },
+      { status: 429 }
+    )
+  }
+
+  const refund = async () => {
+    try {
+      await supabase.rpc("refund_credit")
+    } catch {
+      // best-effort refund
+    }
+  }
+
   const form = new FormData()
   form.append("image_file", input, "image.png")
   form.append("format", "png")
@@ -51,6 +83,7 @@ export async function POST(req: NextRequest) {
       body: form,
     })
   } catch {
+    await refund()
     return Response.json(
       { error: "upstream_unreachable", message: "Tjänsten är inte tillgänglig just nu." },
       { status: 502 }
@@ -58,15 +91,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (!upstream.ok) {
+    await refund()
     const detail = await upstream.text().catch(() => "")
     return Response.json(
       {
-        error: "photoroom_failed",
+        error: "upstream_failed",
         status: upstream.status,
-        message:
-          upstream.status === 402 || upstream.status === 403
-            ? "Begäran nekades (kontrollera kvot/konfiguration)."
-            : "Kunde inte bearbeta bilden.",
+        message: "Kunde inte bearbeta bilden.",
         detail: detail.slice(0, 500),
       },
       { status: 502 }

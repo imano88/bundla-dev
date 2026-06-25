@@ -23,7 +23,7 @@ export default function LoginPage() {
 
         <div className="rounded-[22px] border border-[var(--line-soft)] bg-white p-7 shadow-[var(--shadow-card)]">
           <h1 className="mb-1 font-display text-xl font-bold tracking-[-0.02em] text-ink">Logga in</h1>
-          <p className="mb-5 text-sm text-ink-muted">Ange lösenordet för att öppna Studion.</p>
+          <p className="mb-5 text-sm text-ink-muted">Vi skickar en inloggningslänk till din mejl.</p>
           <LoginForm />
         </div>
 
