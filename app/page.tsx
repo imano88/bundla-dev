@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { LandingPage } from "@/components/landing-page"
 import { JsonLd } from "@/components/json-ld"
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE } from "@/lib/site"
+import { FAQ } from "@/lib/faq"
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -48,10 +49,20 @@ const software = {
   slogan: SITE_TAGLINE,
 }
 
+const faqPage = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: { "@type": "Answer", text: item.a },
+  })),
+}
+
 export default function Page() {
   return (
     <>
-      <JsonLd data={[organization, website, software]} />
+      <JsonLd data={[organization, website, software, faqPage]} />
       <LandingPage />
     </>
   )

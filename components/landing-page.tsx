@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
+import { FAQ } from "@/lib/faq"
 
 function Mark({ size = 34 }: { size?: number }) {
   return (
@@ -59,6 +60,7 @@ export function LandingPage() {
         <nav className="hidden items-center gap-8 text-[15px] font-medium text-ink-body md:flex">
           <a href="#sa-funkar" className="transition-colors hover:text-ink">Så funkar det</a>
           <a href="#priser" className="transition-colors hover:text-ink">Priser</a>
+          <a href="#faq" className="transition-colors hover:text-ink">Vanliga frågor</a>
         </nav>
         <div className="flex items-center gap-4">
           <Link href="/login" className="text-[15px] font-semibold text-ink-body transition-colors hover:text-ink">
@@ -229,6 +231,32 @@ export function LandingPage() {
               Kontakta oss
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
+        <Eyebrow>Vanliga frågor</Eyebrow>
+        <h2 className="mb-10 font-display text-[34px] font-bold tracking-[-0.03em] sm:text-[40px]">
+          Frågor och svar
+        </h2>
+        <div className="flex flex-col gap-3 lg:max-w-[820px]">
+          {FAQ.map((item) => (
+            <details
+              key={item.q}
+              className="group rounded-[18px] border border-[var(--line-soft)] bg-white px-6 py-5 shadow-[var(--shadow-card)]"
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-[18px] font-semibold tracking-[-0.01em]">
+                {item.q}
+                <span className="shrink-0 text-[var(--bundla-orange)] transition-transform group-open:rotate-45" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </span>
+              </summary>
+              <p className="mt-3 text-base leading-relaxed text-ink-body">{item.a}</p>
+            </details>
+          ))}
         </div>
       </section>
 
