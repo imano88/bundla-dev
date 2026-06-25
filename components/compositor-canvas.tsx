@@ -18,7 +18,7 @@ const OUTPUT_SIZE = 1000
 // Size of the "+" separator relative to the canvas, and how thick its bars are.
 const PLUS_SIZE_FRAC = 0.12
 const PLUS_BAR_FRAC = 0.32
-const PLUS_COLOR = "#a8a8a8"
+const PLUS_COLOR = "#9e9e9e"
 
 /**
  * Returns the tight bounding box of non-transparent pixels in an image.

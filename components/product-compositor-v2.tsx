@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { Download, Loader2, Info, AlertCircle } from "lucide-react"
-import { removeProductBackground } from "@/lib/bg-remover"
+import { Download, Loader2, Info, AlertCircle, Wand2 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ImageDropZone } from "@/components/image-drop-zone"
@@ -290,7 +289,7 @@ function removeSmallIslands(blob: Blob, minFraction = 0.02): Promise<Blob> {
   })
 }
 
-// Sends an image to our Photoroom proxy route and returns the cut-out PNG blob.
+// Sends an image to our background-removal route and returns the cut-out PNG.
 async function photoroomRemove(dataUrl: string): Promise<Blob> {
   const inputBlob = await (await fetch(dataUrl)).blob()
   const resp = await fetch("/api/remove-bg", {
@@ -299,14 +298,8 @@ async function photoroomRemove(dataUrl: string): Promise<Blob> {
     body: inputBlob,
   })
   if (!resp.ok) {
-    let message = "Photoroom misslyckades"
-    try {
-      const j = await resp.json()
-      if (j?.message) message = j.message
-    } catch {
-      // non-JSON error — keep generic message
-    }
-    throw new Error(message)
+    console.error("[frilaggning] route error", resp.status, await resp.text().catch(() => ""))
+    throw new Error("Friläggningen misslyckades. Försök igen.")
   }
   return resp.blob()
 }
@@ -358,116 +351,39 @@ export function ProductCompositor() {
     makeEmptyState(),
     makeEmptyState(),
   ])
-  const [autoRemoveBg, setAutoRemoveBg] = useState(true)
   const [bgColor, setBgColor] = useState("#ffffff")
   const [customColor, setCustomColor] = useState("#ffffff")
   const [transparentBg, setTransparentBg] = useState(true)
   const [padding, setPadding] = useState(30)
   const [gap, setGap] = useState(20)
   const [showPlus, setShowPlus] = useState(true)
-  const [engine, setEngine] = useState<"builtin" | "photoroom">("builtin")
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
     canvasRef.current = canvas
   }, [])
 
-  const processImage = useCallback(
-    async (dataUrl: string, file: File, index: 0 | 1) => {
-      // Immediately load and show the original image — no lag on drop
-      let originalElement: HTMLImageElement | null = null
-      try {
-        originalElement = await loadImage(dataUrl)
-      } catch {
-        // ignore — we'll catch it below
+  const processImage = useCallback(async (dataUrl: string, file: File, index: 0 | 1) => {
+    // Show the original immediately; friläggning runs later via the action button.
+    let element: HTMLImageElement | null = null
+    try {
+      element = await loadImage(dataUrl)
+    } catch {
+      // ignore — the slot just stays empty
+    }
+    setImages((prev) => {
+      const next = [...prev] as [ImageState, ImageState]
+      next[index] = {
+        original: dataUrl,
+        processed: null,
+        file,
+        element,
+        status: "done",
+        error: null,
       }
-
-      setImages((prev) => {
-        const next = [...prev] as [ImageState, ImageState]
-        next[index] = {
-          original: dataUrl,
-          processed: null,
-          file,
-          // Show original immediately so the drop zone feels instant
-          element: autoRemoveBg ? null : (originalElement ?? null),
-          status: autoRemoveBg ? "normalizing" : "done",
-          error: null,
-        }
-        return next
-      })
-
-      if (!autoRemoveBg) return
-
-      if (engine === "photoroom") {
-        // Paid API: don't auto-process on drop. Show the original and wait for
-        // the explicit "Frilägg med Photoroom" action (one combined call).
-        setImages((prev) => {
-          const next = [...prev] as [ImageState, ImageState]
-          next[index] = { ...next[index], element: originalElement ?? null, status: "done" }
-          return next
-        })
-        return
-      }
-
-      // Yield to the browser so the UI re-renders before heavy processing
-      await new Promise<void>((r) => setTimeout(r, 0))
-
-      try {
-        // Step 1: normalise format + downscale very large images
-        const pngDataUrl = await normalizeImageToPng(dataUrl)
-
-        setImages((prev) => {
-          const next = [...prev] as [ImageState, ImageState]
-          next[index] = { ...next[index], status: "segmenting" }
-          return next
-        })
-
-        // Yield again before the heavy processing
-        await new Promise<void>((r) => setTimeout(r, 0))
-
-        // Built-in AI background removal in a Web Worker so the main thread
-        // stays responsive — both images can be dropped and processed at once.
-        const rawBlob = await removeProductBackground(pngDataUrl)
-
-        setImages((prev) => {
-          const next = [...prev] as [ImageState, ImageState]
-          next[index] = { ...next[index], status: "cleaning" }
-          return next
-        })
-
-        // Cleanup: border flood-fill refine (recovers faint white bodies,
-        // kills ghosts, solidifies interior, smooth edges) then drop specks.
-        const refinedBlob = await refineMatte(rawBlob, pngDataUrl)
-        const blob = await removeSmallIslands(refinedBlob)
-        const url = URL.createObjectURL(blob)
-        const img = await loadImage(url)
-
-        setImages((prev) => {
-          const next = [...prev] as [ImageState, ImageState]
-          next[index] = { ...next[index], processed: url, element: img, status: "done" }
-          return next
-        })
-      } catch (err) {
-        console.error("[v0] background removal error:", err)
-        // Fallback: show original image without bg removal
-        const fallbackEl = originalElement ?? await loadImage(dataUrl).catch(() => null)
-        setImages((prev) => {
-          const next = [...prev] as [ImageState, ImageState]
-          next[index] = {
-            ...next[index],
-            element: fallbackEl,
-            status: "error",
-            error:
-              err instanceof Error && /Photoroom/i.test(err.message)
-                ? err.message
-                : "Bakgrundsborttagning misslyckades – använder originalbild.",
-          }
-          return next
-        })
-      }
-    },
-    [autoRemoveBg, engine]
-  )
+      return next
+    })
+  }, [])
 
   // Photoroom: combine both originals -> ONE removal call -> split back, so a
   // bundle costs a single credit instead of two.
@@ -511,8 +427,8 @@ export function ProductCompositor() {
         })
       }
     } catch (err) {
-      console.error("[photoroom] error:", err)
-      const message = err instanceof Error ? err.message : "Photoroom misslyckades"
+      console.error("[frilaggning] error:", err)
+      const message = err instanceof Error ? err.message : "Friläggningen misslyckades. Försök igen."
       setImages((prev) => {
         const next = [...prev] as [ImageState, ImageState]
         if (haveA) next[0] = { ...next[0], status: "error", error: message }
@@ -568,7 +484,6 @@ export function ProductCompositor() {
   const displayLeft = images[0].processed || images[0].original || null
   const displayRight = images[1].processed || images[1].original || null
   const anyProcessed = images.some((img) => img.processed)
-  const engineLabel = engine === "photoroom" ? "Photoroom" : "Inbyggd AI"
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--app-bg)] text-ink">
@@ -684,11 +599,7 @@ export function ProductCompositor() {
                       : "bg-ink-ghost"
                   )}
                 />
-                {isProcessing
-                  ? "Bearbetar…"
-                  : anyProcessed
-                  ? `Friställd · ${engineLabel}`
-                  : "Original"}
+                {isProcessing ? "Bearbetar…" : anyProcessed ? "Friställd" : "Original"}
               </div>
             )}
           </div>
@@ -716,58 +627,24 @@ export function ProductCompositor() {
           <h2 className="mb-5 font-display text-[17px] font-bold tracking-[-0.02em]">Inställningar</h2>
 
           <div className="flex flex-col">
-            {/* Auto BG removal */}
-            <div className="flex items-start justify-between gap-3 border-b border-[var(--line-soft)] pb-5">
-              <div>
-                <div className="text-sm font-semibold">Ta bort bakgrund automatiskt</div>
-                <p className="mt-0.5 text-xs text-ink-muted">AI klipper ut produkten</p>
-              </div>
-              <Switch
-                checked={autoRemoveBg}
-                onCheckedChange={setAutoRemoveBg}
-                aria-label="Automatisk bakgrundsborttagning"
-              />
-            </div>
-
-            {/* Friläggningsmetod */}
-            {autoRemoveBg && (
-              <div className="border-b border-[var(--line-soft)] py-5">
-                <div className="mb-3 text-[13px] font-semibold">Friläggningsmetod</div>
-                <div className="grid grid-cols-2 gap-2 rounded-[11px] bg-[var(--surface-sunken)] p-1">
-                  {(["builtin", "photoroom"] as const).map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => setEngine(opt)}
-                      aria-pressed={engine === opt}
-                      className={cn(
-                        "rounded-lg py-2 text-[13px] font-semibold transition-all",
-                        engine === opt
-                          ? "bg-white text-ink shadow-[0_1px_4px_rgba(60,40,15,0.16)]"
-                          : "text-ink-muted hover:text-ink"
-                      )}
-                    >
-                      {opt === "builtin" ? "Inbyggd AI" : "Photoroom"}
-                    </button>
-                  ))}
-                </div>
-                {engine === "photoroom" && (
-                  <>
-                    <button
-                      onClick={runPhotoroom}
-                      disabled={!hasAnyImage || isProcessing}
-                      className="btn-brand mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[11px] px-4 py-2.5 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                      Frilägg med Photoroom
-                    </button>
-                    <p className="mt-2 text-xs text-ink-muted">
-                      Slår ihop båda bilderna till ett anrop — 1 kredit per bundle.
-                    </p>
-                  </>
+            {/* Friläggning */}
+            <div className="border-b border-[var(--line-soft)] pb-5">
+              <button
+                onClick={runPhotoroom}
+                disabled={!hasAnyImage || isProcessing}
+                className="btn-brand inline-flex w-full items-center justify-center gap-2 rounded-[11px] px-4 py-3 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4" />
                 )}
-              </div>
-            )}
+                {isProcessing ? "Friställer…" : "Frilägg & skapa bundle"}
+              </button>
+              <p className="mt-2 text-xs text-ink-muted">
+                Klipper ut båda produkterna och slår ihop dem till en bundle.
+              </p>
+            </div>
 
             {/* Plustecken */}
             <div className="flex items-start justify-between gap-3 border-b border-[var(--line-soft)] py-5">

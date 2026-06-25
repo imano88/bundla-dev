@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.API_PHOTOROOM
   if (!apiKey) {
     return Response.json(
-      { error: "missing_key", message: "Photoroom-nyckel saknas på servern" },
+      { error: "not_configured", message: "Tjänsten är inte konfigurerad." },
       { status: 500 }
     )
   }
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     })
   } catch {
     return Response.json(
-      { error: "upstream_unreachable", message: "Kunde inte nå Photoroom" },
+      { error: "upstream_unreachable", message: "Tjänsten är inte tillgänglig just nu." },
       { status: 502 }
     )
   }
@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
         status: upstream.status,
         message:
           upstream.status === 402 || upstream.status === 403
-            ? "Photoroom nekade anropet (kontrollera nyckel/kvot)"
-            : "Photoroom kunde inte bearbeta bilden",
+            ? "Begäran nekades (kontrollera kvot/konfiguration)."
+            : "Kunde inte bearbeta bilden.",
         detail: detail.slice(0, 500),
       },
       { status: 502 }
