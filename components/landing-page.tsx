@@ -1,6 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { FAQ } from "@/lib/faq"
+import { SOLUTIONS } from "@/lib/landing-pages"
 import { MobileMenu } from "@/components/mobile-menu"
 
 function Mark({ size = 34 }: { size?: number }) {
@@ -214,6 +215,37 @@ export function LandingPage() {
               <h3 className="mb-3 font-display text-[23px] font-semibold tracking-[-0.02em]">{s.title}</h3>
               <p className="text-base leading-relaxed text-ink-body">{s.body}</p>
             </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Lösningar */}
+      <section className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <Eyebrow>Lösningar</Eyebrow>
+            <h2 className="font-display text-[34px] font-bold tracking-[-0.03em] sm:text-[40px]">
+              Bundla för ditt behov
+            </h2>
+          </div>
+          <Link href="/losningar" className="text-sm font-semibold text-[var(--bundla-orange-deep)] hover:underline">
+            Alla lösningar →
+          </Link>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {SOLUTIONS.map((s) => (
+            <Link
+              key={s.slug}
+              href={`/losningar/${s.slug}`}
+              className="group flex flex-col rounded-[20px] border border-[var(--line-soft)] bg-white p-6 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-pop)]"
+            >
+              <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-ghost">{s.eyebrow}</div>
+              <h3 className="mt-3 flex-1 font-display text-[19px] font-semibold leading-snug tracking-[-0.02em]">{s.metaTitle}</h3>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--bundla-orange-deep)]">
+                Läs mer
+                <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              </span>
+            </Link>
           ))}
         </div>
       </section>
