@@ -1,6 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { FAQ } from "@/lib/faq"
+import { MobileMenu } from "@/components/mobile-menu"
 
 function Mark({ size = 34 }: { size?: number }) {
   return (
@@ -50,7 +51,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-[var(--paper)] text-ink">
       {/* Nav */}
-      <header className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-6 sm:px-10">
+      <header className="relative mx-auto flex max-w-[1200px] items-center justify-between px-6 py-6 sm:px-10">
         <Link href="/" className="group flex items-center gap-2.5">
           <span className="inline-flex transition-transform duration-300 ease-out group-hover:rotate-[-6deg] group-hover:scale-110">
             <Mark />
@@ -63,7 +64,7 @@ export function LandingPage() {
           <a href="#priser" className="transition-colors hover:text-ink">Priser</a>
           <a href="#faq" className="transition-colors hover:text-ink">Vanliga frågor</a>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="hidden items-center gap-4 md:flex">
           <Link href="/login" className="text-[15px] font-semibold text-ink-body transition-colors hover:text-ink">
             Logga in
           </Link>
@@ -74,6 +75,7 @@ export function LandingPage() {
             Öppna Studio →
           </Link>
         </div>
+        <MobileMenu />
       </header>
 
       {/* Hero */}
