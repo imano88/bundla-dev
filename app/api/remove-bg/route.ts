@@ -52,6 +52,21 @@ export async function POST(req: NextRequest) {
   const { data: consumeData, error: consumeError } = await supabase.rpc("consume_credit")
   const quota = Array.isArray(consumeData) ? consumeData[0] : consumeData
   if (consumeError || !quota?.allowed) {
+    console.error(
+      "[remove-bg] consume_credit blocked",
+      JSON.stringify({
+        userId: user.id,
+        consumeError: consumeError
+          ? {
+              message: consumeError.message,
+              code: (consumeError as { code?: string }).code,
+              details: (consumeError as { details?: string }).details,
+              hint: (consumeError as { hint?: string }).hint,
+            }
+          : null,
+        quota,
+      })
+    )
     return Response.json(
       {
         error: "quota",
