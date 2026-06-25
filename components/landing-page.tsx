@@ -38,7 +38,7 @@ const STEPS = [
   },
   {
     n: "02",
-    title: "Friställs automatiskt",
+    title: "Friläggs automatiskt",
     body: "Bakgrunden tas bort och produkterna placeras med jämn marginal och mellanrum.",
   },
   {
@@ -100,7 +100,7 @@ export function LandingPage() {
             .
           </h1>
           <p className="mt-5 max-w-[440px] text-[19px] leading-relaxed text-ink-body">
-            Dra in två produktbilder. Bundla friställer dem automatiskt och sätter ihop dem till en
+            Dra in två produktbilder. Bundla frilägger dem automatiskt och sätter ihop dem till en
             snygg paketbild, redo för butiken på sekunder.
           </p>
           <div className="mt-8 flex flex-wrap gap-3.5">
@@ -130,7 +130,7 @@ export function LandingPage() {
               <div className="checker flex h-[104px] w-[110px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea]">
                 <Image
                   src="/images/preview-tvattmaskin.png"
-                  alt="Tvättmaskin, friställd"
+                  alt="Tvättmaskin, frilagd"
                   width={110}
                   height={104}
                   className="h-full w-full object-contain p-1.5"
@@ -139,7 +139,7 @@ export function LandingPage() {
               <div className="checker flex h-[104px] w-[110px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea]">
                 <Image
                   src="/images/preview-torktumlare.png"
-                  alt="Torktumlare, friställd"
+                  alt="Torktumlare, frilagd"
                   width={110}
                   height={104}
                   className="h-full w-full object-contain p-1.5"
@@ -193,7 +193,7 @@ export function LandingPage() {
             </h2>
           </div>
           <p className="max-w-[300px] text-base leading-relaxed text-ink-body">
-            Ingen Photoshop, inga lager, inga friställningsverktyg. Bundla gör jobbet åt dig.
+            Ingen Photoshop, inga lager, inga friläggningsverktyg. Bundla gör jobbet åt dig.
           </p>
         </div>
         <div className="grid gap-10 sm:grid-cols-3 sm:gap-12">

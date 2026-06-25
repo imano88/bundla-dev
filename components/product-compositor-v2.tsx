@@ -631,7 +631,7 @@ export function ProductCompositor() {
                       : "bg-ink-ghost"
                   )}
                 />
-                {isProcessing ? "Bearbetar…" : anyProcessed ? "Friställd" : "Original"}
+                {isProcessing ? "Bearbetar…" : anyProcessed ? "Frilagd" : "Original"}
               </div>
             )}
           </div>
@@ -671,7 +671,7 @@ export function ProductCompositor() {
                 ) : (
                   <Wand2 className="h-4 w-4" />
                 )}
-                {isProcessing ? "Friställer…" : "Frilägg & skapa bundle"}
+                {isProcessing ? "Frilägger…" : "Frilägg & skapa bundle"}
               </button>
               <p className="mt-2 text-xs text-ink-muted">
                 Klipper ut båda produkterna och slår ihop dem till en bundle.
@@ -824,7 +824,7 @@ function ImageStatusBadge({ state }: { state: ImageState }) {
       {state.status === "done" && state.processed && (
         <>
           <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--success)]" />
-          <span>Friställd</span>
+          <span>Frilagd</span>
         </>
       )}
       {state.status === "done" && !state.processed && (

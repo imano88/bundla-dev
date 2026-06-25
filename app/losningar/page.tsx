@@ -20,7 +20,7 @@ export default function SolutionsIndex() {
           Vad vill du lösa?
         </h1>
         <p className="mt-5 max-w-[560px] text-[19px] leading-relaxed text-ink-body">
-          Bundla skapar friställda produkt- och paketbilder för e-handel. Välj det som passar dig.
+          Bundla skapar frilagda produkt- och paketbilder för e-handel. Välj det som passar dig.
         </p>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2">

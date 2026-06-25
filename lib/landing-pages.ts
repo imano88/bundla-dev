@@ -20,7 +20,7 @@ export type Solution = {
 
 const SHARED_STEPS = [
   { title: "Dra in två bilder", body: "Släpp en produktbild i vardera rutan. PNG, WebP eller JPG, upp till 20 MB per bild." },
-  { title: "Friställs automatiskt", body: "Bakgrunden tas bort och produkterna placeras med jämn marginal och mellanrum." },
+  { title: "Friläggs automatiskt", body: "Bakgrunden tas bort och produkterna placeras med jämn marginal och mellanrum." },
   { title: "Exportera färdig PNG", body: "Ladda ner en transparent eller färgsatt bundle-bild i 1000×1000, redo för butiken." },
 ]
 
@@ -33,10 +33,10 @@ export const SOLUTIONS: Solution[] = [
     metaDescription:
       "Frilägg produktbilder automatiskt och få en ren, transparent bakgrund. Ingen Photoshop, inga lager. Klart på sekunder med Bundla.",
     intro: [
-      "Att klippa ut produkter för hand i Photoshop tar tid och kräver vana. Bundla friställer dina produktbilder automatiskt och ger dig en ren, transparent bakgrund på sekunder.",
+      "Att klippa ut produkter för hand i Photoshop tar tid och kräver vana. Bundla frilägger dina produktbilder automatiskt och ger dig en ren, transparent bakgrund på sekunder.",
       "Ladda upp bilden, låt Bundla ta bort bakgrunden och exportera en färdig PNG som kan läggas upp direkt i webbutiken.",
     ],
-    benefitsTitle: "Därför friställer e-handlare med Bundla",
+    benefitsTitle: "Därför frilägger e-handlare med Bundla",
     benefits: [
       { title: "Jämn kvalitet", body: "Samma rena kant på varje bild, oavsett vem i teamet som gör jobbet." },
       { title: "Inga verktyg", body: "Du behöver varken Photoshop, plugins eller designkunskap." },

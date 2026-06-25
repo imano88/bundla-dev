@@ -5,11 +5,11 @@ export type FaqItem = { q: string; a: string }
 export const FAQ: FaqItem[] = [
   {
     q: "Vad är Bundla?",
-    a: "Bundla är ett webbverktyg som friställer två produktbilder automatiskt och slår ihop dem till en färdig bundle-bild för e-handel. Du behöver varken Photoshop eller designkunskap.",
+    a: "Bundla är ett webbverktyg som frilägger två produktbilder automatiskt och slår ihop dem till en färdig bundle-bild för e-handel. Du behöver varken Photoshop eller designkunskap.",
   },
   {
     q: "Vilka filformat och storlekar fungerar?",
-    a: "Du kan ladda upp PNG, WebP och JPG, upp till 20 MB per bild. Bilderna behöver inte vara friställda i förväg, det sköter Bundla.",
+    a: "Du kan ladda upp PNG, WebP och JPG, upp till 20 MB per bild. Bilderna behöver inte vara frilagda i förväg, det sköter Bundla.",
   },
   {
     q: "Vilken upplösning får den färdiga bilden?",

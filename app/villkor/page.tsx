@@ -24,7 +24,7 @@ export default function VillkorPage() {
           <section>
             <h2 className="mb-2 font-display text-lg font-semibold text-ink">Tjänsten</h2>
             <p>
-              Bundla låter dig ladda upp produktbilder, friställa dem och sätta ihop dem till en
+              Bundla låter dig ladda upp produktbilder, frilägga dem och sätta ihop dem till en
               paketbild. Tillgänglighet och funktioner kan ändras över tid.
             </p>
           </section>

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: '%s · Bundla',
   },
   description:
-    'Bundla friställer två produktbilder automatiskt och slår ihop dem till en färdig bundle-bild för e-handel.',
+    'Bundla frilägger två produktbilder automatiskt och slår ihop dem till en färdig bundle-bild för e-handel.',
   applicationName: 'Bundla',
   openGraph: {
     type: 'website',
