@@ -83,7 +83,7 @@ export function LandingPage() {
       <section className="mx-auto grid max-w-[1200px] items-center gap-12 px-6 pb-12 pt-10 sm:px-10 lg:grid-cols-2 lg:gap-16">
         <div>
           <Eyebrow>Byggd för e-handel</Eyebrow>
-          <h1 className="font-display text-[44px] font-bold leading-[0.98] tracking-[-0.035em] sm:text-[60px]">
+          <h1 className="font-display text-[38px] font-bold leading-[1.02] tracking-[-0.035em] sm:text-[48px] lg:text-[60px]">
             Två produktbilder.
             <br />
             En färdig{" "}
@@ -99,20 +99,20 @@ export function LandingPage() {
             </span>
             .
           </h1>
-          <p className="mt-5 max-w-[440px] text-[19px] leading-relaxed text-ink-body">
+          <p className="mt-5 max-w-[440px] text-[17px] leading-relaxed text-ink-body sm:text-[19px]">
             Dra in två produktbilder. Bundla frilägger dem automatiskt och sätter ihop dem till en
             snygg paketbild, redo för butiken på sekunder.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3.5">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
             <Link
               href="/studio"
-              className="btn-brand inline-flex items-center gap-2 rounded-[11px] px-6 py-3.5 text-base font-semibold"
+              className="btn-brand inline-flex w-full items-center justify-center gap-2 rounded-[11px] px-6 py-3.5 text-base font-semibold sm:w-auto"
             >
               Öppna Studio →
             </Link>
             <a
               href="#sa-funkar"
-              className="inline-flex items-center gap-2 rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface)] px-5 py-3.5 text-base font-semibold text-ink transition-colors hover:bg-white"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface)] px-5 py-3.5 text-base font-semibold text-ink transition-colors hover:bg-white sm:w-auto"
             >
               Se hur det funkar
             </a>
@@ -125,9 +125,9 @@ export function LandingPage() {
           <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-ghost">
             Förhandsvisning
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col gap-3">
-              <div className="checker flex h-[104px] w-[110px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-row gap-3 sm:flex-col">
+              <div className="checker flex h-[104px] w-full items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea] sm:w-[110px]">
                 <Image
                   src="/images/preview-tvattmaskin.png"
                   alt="Tvättmaskin, frilagd"
@@ -136,7 +136,7 @@ export function LandingPage() {
                   className="h-full w-full object-contain p-1.5"
                 />
               </div>
-              <div className="checker flex h-[104px] w-[110px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea]">
+              <div className="checker flex h-[104px] w-full items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea] sm:w-[110px]">
                 <Image
                   src="/images/preview-torktumlare.png"
                   alt="Torktumlare, frilagd"
@@ -146,10 +146,10 @@ export function LandingPage() {
                 />
               </div>
             </div>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mx-auto shrink-0 rotate-90 sm:rotate-0">
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
-            <div className="checker relative flex h-[232px] flex-1 items-center justify-center overflow-hidden rounded-2xl border border-[#eceaea]">
+            <div className="checker relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-2xl border border-[#eceaea] sm:h-[232px] sm:flex-1">
               <span className="absolute right-2.5 top-2.5 z-10 rounded-md border border-[var(--tint-orange)] bg-white px-1.5 py-0.5 font-mono text-[9px] text-[var(--bundla-orange)]">
                 PNG · transparent
               </span>
@@ -183,8 +183,8 @@ export function LandingPage() {
       </section>
 
       {/* Så funkar det */}
-      <section id="sa-funkar" className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
-        <div className="mb-11 flex flex-wrap items-end justify-between gap-4">
+      <section id="sa-funkar" className="mx-auto max-w-[1200px] px-6 pb-16 sm:px-10 sm:pb-24">
+        <div className="mb-9 flex flex-col gap-4 sm:mb-11 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <div>
             <Eyebrow>Så funkar det</Eyebrow>
             <h2 className="font-display text-[34px] font-bold leading-tight tracking-[-0.03em] sm:text-[40px]">
@@ -220,8 +220,8 @@ export function LandingPage() {
       </section>
 
       {/* Lösningar */}
-      <section className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
-        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+      <section className="mx-auto max-w-[1200px] px-6 pb-16 sm:px-10 sm:pb-24">
+        <div className="mb-8 flex flex-col gap-3 sm:mb-10 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <div>
             <Eyebrow>Lösningar</Eyebrow>
             <h2 className="font-display text-[34px] font-bold tracking-[-0.03em] sm:text-[40px]">
@@ -251,7 +251,7 @@ export function LandingPage() {
       </section>
 
       {/* Priser */}
-      <section id="priser" className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
+      <section id="priser" className="mx-auto max-w-[1200px] px-6 pb-16 sm:px-10 sm:pb-24">
         <Eyebrow>Priser</Eyebrow>
         <h2 className="mb-10 font-display text-[34px] font-bold tracking-[-0.03em] sm:text-[40px]">
           Enkelt och flexibelt
@@ -277,7 +277,7 @@ export function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
+      <section id="faq" className="mx-auto max-w-[1200px] px-6 pb-16 sm:px-10 sm:pb-24">
         <Eyebrow>Vanliga frågor</Eyebrow>
         <h2 className="mb-10 font-display text-[34px] font-bold tracking-[-0.03em] sm:text-[40px]">
           Frågor och svar
@@ -303,25 +303,24 @@ export function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
+      <section className="mx-auto max-w-[1200px] px-6 pb-16 sm:px-10 sm:pb-24">
         <div
-          className="relative overflow-hidden rounded-[28px] px-8 py-14 sm:px-14 sm:py-16"
+          className="relative overflow-hidden rounded-[28px] px-6 py-12 sm:px-14 sm:py-16"
           style={{ background: "var(--gradient-brand-cta)" }}
         >
           <div className="absolute -right-16 -top-16 h-80 w-80 rounded-full bg-white/10" />
           <div className="relative max-w-[560px]">
-            <h2 className="font-display text-[36px] font-bold leading-none text-white sm:text-[46px]">
-              Bundla dina
-              <br /> produkter idag
+            <h2 className="font-display text-[32px] font-bold leading-[1.05] text-white sm:text-[46px]">
+              Bundla dina produkter idag
             </h2>
-            <p className="mt-4 text-[18px] leading-relaxed text-[#FFEAD8]">
+            <p className="mt-4 text-[17px] leading-relaxed text-[#FFEAD8] sm:text-[18px]">
               Skapa snygga paketbilder på sekunder, utan Photoshop, utan krångel.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3.5">
-              <Link href="/studio" className="inline-flex items-center gap-2 rounded-[11px] bg-ink px-7 py-3.5 text-base font-semibold text-white transition-transform active:translate-y-px">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
+              <Link href="/studio" className="inline-flex w-full items-center justify-center gap-2 rounded-[11px] bg-ink px-7 py-3.5 text-base font-semibold text-white transition-transform active:translate-y-px sm:w-auto">
                 Öppna Studio →
               </Link>
-              <a href="#priser" className="inline-flex items-center rounded-[11px] bg-white/90 px-7 py-3.5 text-base font-semibold text-ink transition-colors hover:bg-white">
+              <a href="#priser" className="inline-flex w-full items-center justify-center rounded-[11px] bg-white/90 px-7 py-3.5 text-base font-semibold text-ink transition-colors hover:bg-white sm:w-auto">
                 Se priser
               </a>
             </div>
@@ -331,13 +330,13 @@ export function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-[var(--line-warm)]">
-        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-6 py-9 sm:px-10">
+        <div className="mx-auto flex max-w-[1200px] flex-col items-start gap-6 px-6 py-9 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-10">
           <div className="flex items-center gap-2.5">
             <Mark size={26} />
             <span className="font-display text-[18px] font-bold tracking-[-0.02em]">Bundla</span>
           </div>
-          <div className="text-sm text-ink-muted">© 2026 Bundla · Bundling-bilder för e-handel</div>
-          <div className="flex flex-wrap gap-6 text-sm font-medium text-ink-body">
+          <div className="order-last text-sm text-ink-muted sm:order-none">© 2026 Bundla · Bundling-bilder för e-handel</div>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-ink-body">
             <Link href="/losningar" className="transition-colors hover:text-ink">Lösningar</Link>
             <Link href="/docs" className="transition-colors hover:text-ink">Hjälp</Link>
             <Link href="/integritetspolicy" className="transition-colors hover:text-ink">Integritet</Link>
