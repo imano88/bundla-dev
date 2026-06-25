@@ -163,13 +163,20 @@ export function LandingPage() {
       </section>
 
       {/* Platform strip */}
-      <section className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-8 gap-y-3 px-6 pb-16 sm:px-10">
-        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#b3a995]">Fungerar med</span>
-        {["Shopify", "WooCommerce", "Centra", "Magento", "Fortnox"].map((p) => (
-          <span key={p} className="font-display text-[18px] text-[#7a7264]">
-            {p}
-          </span>
-        ))}
+      <section className="mx-auto max-w-[1200px] px-6 pb-16 sm:px-10">
+        <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-center sm:gap-7 sm:text-left">
+          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#b3a995]">Fungerar med</span>
+          <div className="flex w-full flex-col items-center gap-2.5 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-3">
+            {["Shopify", "WooCommerce", "Centra", "Magento", "Fortnox"].map((p) => (
+              <span
+                key={p}
+                className="inline-flex items-center rounded-full border border-[var(--line-soft)] bg-white/70 px-4 py-1.5 font-display text-[15px] font-medium text-[#6f675b] shadow-[var(--shadow-card)]"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* Så funkar det */}
