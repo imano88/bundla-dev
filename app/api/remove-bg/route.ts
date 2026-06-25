@@ -6,6 +6,21 @@ export const runtime = "nodejs"
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
+  // Stopgap until auth is live: only allow same-origin calls (our own app) so
+  // the paid endpoint can't easily be hammered by third-party sites.
+  const origin = req.headers.get("origin")
+  const host = req.headers.get("host")
+  if (!origin || !host) {
+    return Response.json({ error: "forbidden" }, { status: 403 })
+  }
+  try {
+    if (new URL(origin).host !== host) {
+      return Response.json({ error: "forbidden" }, { status: 403 })
+    }
+  } catch {
+    return Response.json({ error: "forbidden" }, { status: 403 })
+  }
+
   const apiKey = process.env.API_PHOTOROOM
   if (!apiKey) {
     return Response.json(

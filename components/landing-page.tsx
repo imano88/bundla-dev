@@ -1,0 +1,260 @@
+import Link from "next/link"
+
+function Mark({ size = 34 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 60 60" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="lmark" x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#FF8A2B" />
+          <stop offset="1" stopColor="#FFB05C" />
+        </linearGradient>
+      </defs>
+      <rect x="6" y="6" width="33" height="33" rx="10" fill="url(#lmark)" />
+      <rect x="21" y="21" width="33" height="33" rx="10" fill="#FF6A00" />
+    </svg>
+  )
+}
+
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-4 inline-flex items-center gap-3">
+      <span className="h-0.5 w-[30px] bg-[var(--bundla-orange)]" />
+      <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-[var(--bundla-orange-deep)]">
+        {children}
+      </span>
+    </div>
+  )
+}
+
+const STEPS = [
+  {
+    n: "01",
+    title: "Dra in två bilder",
+    body: "Släpp produktfoton rakt in i Studion — PNG, WebP eller JPG, upp till 20 MB styck.",
+  },
+  {
+    n: "02",
+    title: "Friställs automatiskt",
+    body: "Bakgrunden tas bort och produkterna placeras med jämn marginal och mellanrum.",
+  },
+  {
+    n: "03",
+    title: "Exportera färdig PNG",
+    body: "Ladda ner en transparent eller färgsatt paketbild — redo att läggas upp direkt i butiken.",
+  },
+]
+
+export function LandingPage() {
+  return (
+    <div className="min-h-screen bg-[var(--paper)] text-ink">
+      {/* Nav */}
+      <header className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-6 sm:px-10">
+        <Link href="/" className="flex items-center gap-2.5">
+          <Mark />
+          <span className="font-display text-[23px] font-bold tracking-[-0.02em]">Bundla</span>
+        </Link>
+        <nav className="hidden items-center gap-8 text-[15px] font-medium text-ink-body md:flex">
+          <a href="#sa-funkar" className="transition-colors hover:text-ink">Så funkar det</a>
+          <a href="#priser" className="transition-colors hover:text-ink">Priser</a>
+        </nav>
+        <div className="flex items-center gap-4">
+          <Link href="/login" className="text-[15px] font-semibold text-ink-body transition-colors hover:text-ink">
+            Logga in
+          </Link>
+          <Link
+            href="/studio"
+            className="btn-brand inline-flex items-center gap-2 rounded-[11px] px-5 py-2.5 text-[15px] font-semibold"
+          >
+            Öppna Studio →
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="mx-auto grid max-w-[1200px] items-center gap-12 px-6 pb-12 pt-10 sm:px-10 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <Eyebrow>Byggd för e-handel</Eyebrow>
+          <h1 className="font-display text-[44px] font-bold leading-[0.98] tracking-[-0.035em] sm:text-[60px]">
+            Två produktbilder.
+            <br />
+            En färdig{" "}
+            <span
+              style={{
+                background: "var(--gradient-brand)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              bundle
+            </span>
+            .
+          </h1>
+          <p className="mt-5 max-w-[440px] text-[19px] leading-relaxed text-ink-body">
+            Dra in två produktbilder. Bundla friställer dem automatiskt och sätter ihop dem till en
+            snygg paketbild — redo för butiken på sekunder.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3.5">
+            <Link
+              href="/studio"
+              className="btn-brand inline-flex items-center gap-2 rounded-[11px] px-6 py-3.5 text-base font-semibold"
+            >
+              Öppna Studio →
+            </Link>
+            <a
+              href="#sa-funkar"
+              className="inline-flex items-center gap-2 rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface)] px-5 py-3.5 text-base font-semibold text-ink transition-colors hover:bg-white"
+            >
+              Se hur det funkar
+            </a>
+          </div>
+          <p className="mt-5 text-sm text-ink-muted">Inga lager, ingen Photoshop — bara dra och släpp.</p>
+        </div>
+
+        {/* Preview card */}
+        <div className="rounded-[28px] border border-[var(--line-soft)] bg-white p-6 shadow-[var(--shadow-float)]">
+          <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-ghost">
+            Förhandsvisning
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3">
+              <div className="checker flex h-[104px] w-[110px] items-center justify-center rounded-[14px] border border-[#eceaea]">
+                <div className="h-16 w-10 rounded-lg bg-gradient-to-br from-[#EFAE5A] to-[#C9772A]" />
+              </div>
+              <div className="checker flex h-[104px] w-[110px] items-center justify-center rounded-[14px] border border-[#eceaea]">
+                <div className="h-14 w-20 rounded-b-[12px] border border-[var(--line-soft)] bg-gradient-to-b from-white to-[#EFE8DC]" />
+              </div>
+            </div>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+            <div className="checker relative flex h-[232px] flex-1 items-center justify-center gap-2 rounded-2xl border border-[#eceaea]">
+              <span className="absolute right-2.5 top-2.5 rounded-md border border-[var(--tint-orange)] bg-white px-1.5 py-0.5 font-mono text-[9px] text-[var(--bundla-orange)]">
+                PNG · transparent
+              </span>
+              <div className="h-[88px] w-[50px] rounded-[10px] bg-gradient-to-br from-[#EFAE5A] to-[#C9772A]" />
+              <span className="font-display text-[22px] font-semibold text-[var(--bundla-orange)]">+</span>
+              <div className="h-[62px] w-[104px] rounded-b-[15px] border border-[var(--line-soft)] bg-gradient-to-b from-white to-[#EFE8DC]" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Platform strip */}
+      <section className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-8 gap-y-3 px-6 pb-16 sm:px-10">
+        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#b3a995]">Fungerar med</span>
+        {["Shopify", "WooCommerce", "Centra", "Magento", "Fortnox"].map((p) => (
+          <span key={p} className="font-display text-[18px] text-[#7a7264]">
+            {p}
+          </span>
+        ))}
+      </section>
+
+      {/* Så funkar det */}
+      <section id="sa-funkar" className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
+        <div className="mb-11 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <Eyebrow>Så funkar det</Eyebrow>
+            <h2 className="font-display text-[34px] font-bold leading-tight tracking-[-0.03em] sm:text-[40px]">
+              Från två filer till färdig
+              <br className="hidden sm:block" /> paketbild — i tre steg
+            </h2>
+          </div>
+          <p className="max-w-[300px] text-base leading-relaxed text-ink-body">
+            Ingen Photoshop, inga lager, inga friställningsverktyg. Bundla gör jobbet åt dig.
+          </p>
+        </div>
+        <div className="grid gap-10 sm:grid-cols-3 sm:gap-12">
+          {STEPS.map((s) => (
+            <div key={s.n}>
+              <div className="mb-6 border-t-2 border-ink pt-4">
+                <span
+                  className="font-display text-[40px] font-bold leading-none"
+                  style={{
+                    background: "var(--gradient-brand)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    color: "transparent",
+                  }}
+                >
+                  {s.n}
+                </span>
+              </div>
+              <h3 className="mb-3 font-display text-[23px] font-semibold tracking-[-0.02em]">{s.title}</h3>
+              <p className="text-base leading-relaxed text-ink-body">{s.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Priser */}
+      <section id="priser" className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
+        <Eyebrow>Priser</Eyebrow>
+        <h2 className="mb-10 font-display text-[34px] font-bold tracking-[-0.03em] sm:text-[40px]">
+          Enkelt och flexibelt
+        </h2>
+        <div className="grid gap-6 sm:grid-cols-2 lg:max-w-[760px]">
+          <div className="rounded-[22px] border border-[var(--line-soft)] bg-white p-7 shadow-[var(--shadow-card)]">
+            <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-ghost">Test</div>
+            <div className="mt-3 font-display text-[40px] font-bold tracking-[-0.02em]">Demo</div>
+            <p className="mt-2 text-sm text-ink-body">Provkör Studion och se kvaliteten innan ni rullar ut det i teamet.</p>
+            <Link href="/studio" className="mt-6 inline-flex rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface)] px-5 py-3 text-sm font-semibold transition-colors hover:bg-white">
+              Öppna Studio →
+            </Link>
+          </div>
+          <div className="rounded-[22px] border border-[var(--tint-orange-border,#F6D2B6)] bg-white p-7 shadow-[var(--shadow-pop)]">
+            <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--bundla-orange-deep)]">Företag</div>
+            <div className="mt-3 font-display text-[40px] font-bold tracking-[-0.02em]">Skräddarsytt</div>
+            <p className="mt-2 text-sm text-ink-body">Egen kvot per månad, fler användare och support. Vi sätter upp ett konto åt er.</p>
+            <a href="mailto:jakob.radback@markable.se" className="btn-brand mt-6 inline-flex rounded-[11px] px-5 py-3 text-sm font-semibold">
+              Kontakta oss
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
+        <div
+          className="relative overflow-hidden rounded-[28px] px-8 py-14 sm:px-14 sm:py-16"
+          style={{ background: "var(--gradient-brand-cta)" }}
+        >
+          <div className="absolute -right-16 -top-16 h-80 w-80 rounded-full bg-white/10" />
+          <div className="relative max-w-[560px]">
+            <h2 className="font-display text-[36px] font-bold leading-none text-white sm:text-[46px]">
+              Bundla dina
+              <br /> produkter idag
+            </h2>
+            <p className="mt-4 text-[18px] leading-relaxed text-[#FFEAD8]">
+              Skapa snygga paketbilder på sekunder — utan Photoshop, utan krångel.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3.5">
+              <Link href="/studio" className="inline-flex items-center gap-2 rounded-[11px] bg-ink px-7 py-3.5 text-base font-semibold text-white transition-transform active:translate-y-px">
+                Öppna Studio →
+              </Link>
+              <a href="#priser" className="inline-flex items-center rounded-[11px] bg-white/90 px-7 py-3.5 text-base font-semibold text-ink transition-colors hover:bg-white">
+                Se priser
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-[var(--line-warm)]">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-6 py-9 sm:px-10">
+          <div className="flex items-center gap-2.5">
+            <Mark size={26} />
+            <span className="font-display text-[18px] font-bold tracking-[-0.02em]">Bundla</span>
+          </div>
+          <div className="text-sm text-ink-muted">© 2026 Bundla · Bundling-bilder för e-handel</div>
+          <div className="flex gap-6 text-sm font-medium text-ink-body">
+            <Link href="/integritetspolicy" className="transition-colors hover:text-ink">Integritet</Link>
+            <Link href="/villkor" className="transition-colors hover:text-ink">Villkor</Link>
+            <a href="mailto:jakob.radback@markable.se" className="transition-colors hover:text-ink">Kontakt</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}

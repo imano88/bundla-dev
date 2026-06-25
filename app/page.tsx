@@ -1,5 +1,5 @@
-import { ProductCompositor } from "@/components/product-compositor-v2"
+import { LandingPage } from "@/components/landing-page"
 
 export default function Page() {
-  return <ProductCompositor />
+  return <LandingPage />
 }
