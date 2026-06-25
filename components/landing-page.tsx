@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 
 function Mark({ size = 34 }: { size?: number }) {
   return (
@@ -120,23 +121,39 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex flex-col gap-3">
-              <div className="checker flex h-[104px] w-[110px] items-center justify-center rounded-[14px] border border-[#eceaea]">
-                <div className="h-16 w-10 rounded-lg bg-gradient-to-br from-[#EFAE5A] to-[#C9772A]" />
+              <div className="checker flex h-[104px] w-[110px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea]">
+                <Image
+                  src="/images/preview-tvattmaskin.png"
+                  alt="Tvättmaskin, friställd"
+                  width={110}
+                  height={104}
+                  className="h-full w-full object-contain p-1.5"
+                />
               </div>
-              <div className="checker flex h-[104px] w-[110px] items-center justify-center rounded-[14px] border border-[#eceaea]">
-                <div className="h-14 w-20 rounded-b-[12px] border border-[var(--line-soft)] bg-gradient-to-b from-white to-[#EFE8DC]" />
+              <div className="checker flex h-[104px] w-[110px] items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea]">
+                <Image
+                  src="/images/preview-torktumlare.png"
+                  alt="Torktumlare, friställd"
+                  width={110}
+                  height={104}
+                  className="h-full w-full object-contain p-1.5"
+                />
               </div>
             </div>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
-            <div className="checker relative flex h-[232px] flex-1 items-center justify-center gap-2 rounded-2xl border border-[#eceaea]">
-              <span className="absolute right-2.5 top-2.5 rounded-md border border-[var(--tint-orange)] bg-white px-1.5 py-0.5 font-mono text-[9px] text-[var(--bundla-orange)]">
+            <div className="checker relative flex h-[232px] flex-1 items-center justify-center overflow-hidden rounded-2xl border border-[#eceaea]">
+              <span className="absolute right-2.5 top-2.5 z-10 rounded-md border border-[var(--tint-orange)] bg-white px-1.5 py-0.5 font-mono text-[9px] text-[var(--bundla-orange)]">
                 PNG · transparent
               </span>
-              <div className="h-[88px] w-[50px] rounded-[10px] bg-gradient-to-br from-[#EFAE5A] to-[#C9772A]" />
-              <span className="font-display text-[22px] font-semibold text-[var(--bundla-orange)]">+</span>
-              <div className="h-[62px] w-[104px] rounded-b-[15px] border border-[var(--line-soft)] bg-gradient-to-b from-white to-[#EFE8DC]" />
+              <Image
+                src="/images/preview-bundle.png"
+                alt="Färdig bundle: tvättmaskin och torktumlare sammansatta"
+                width={420}
+                height={232}
+                className="h-full w-full object-contain p-3"
+              />
             </div>
           </div>
         </div>
