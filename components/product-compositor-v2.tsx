@@ -475,7 +475,7 @@ export function ProductCompositor() {
         const url = URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = "bundling-produktbild.png"
+        a.download = "bundla-paketbild.png"
         a.click()
         URL.revokeObjectURL(url)
       },
