@@ -139,21 +139,21 @@ begin
     return query select false, 0, 0; return;
   end if;
 
-  select monthly_quota into v_quota from public.organizations where id = v_org;
+  select o.monthly_quota into v_quota from public.organizations o where o.id = v_org;
 
   insert into public.usage_counters (org_id, period, used)
   values (v_org, v_period, 0)
   on conflict (org_id, period) do nothing;
 
-  select used into v_used from public.usage_counters
-   where org_id = v_org and period = v_period for update;
+  select uc.used into v_used from public.usage_counters uc
+   where uc.org_id = v_org and uc.period = v_period for update;
 
   if v_used >= v_quota then
     return query select false, v_used, v_quota; return;
   end if;
 
-  update public.usage_counters set used = used + 1
-   where org_id = v_org and period = v_period;
+  update public.usage_counters uc set used = uc.used + 1
+   where uc.org_id = v_org and uc.period = v_period;
 
   insert into public.usage_events (org_id, user_id) values (v_org, auth.uid());
 
