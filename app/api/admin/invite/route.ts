@@ -67,12 +67,19 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { error: updErr } = await admin
+  // Upsert (not update): guarantees the profile row exists and is attached,
+  // even if the auth trigger has not yet created it. A bare update could match
+  // zero rows and silently report success without attaching anyone.
+  const { data: attached, error: updErr } = await admin
     .from("profiles")
-    .update({ org_id: me.org_id, role: memberRole })
-    .eq("id", targetId)
+    .upsert(
+      { id: targetId, org_id: me.org_id, role: memberRole, email: normalizedEmail },
+      { onConflict: "id" }
+    )
+    .select("id")
+    .maybeSingle()
 
-  if (updErr) {
+  if (updErr || !attached) {
     return Response.json({ error: "attach_failed", message: "Kunde inte koppla användaren." }, { status: 502 })
   }
 

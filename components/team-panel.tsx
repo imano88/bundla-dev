@@ -22,6 +22,7 @@ export function TeamPanel({
 }) {
   const router = useRouter()
   const [email, setEmail] = useState("")
+  const [role, setRole] = useState<"member" | "admin">("member")
   const [inviting, setInviting] = useState(false)
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null)
 
@@ -33,12 +34,16 @@ export function TeamPanel({
       const res = await fetch("/api/admin/invite", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, role }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
-        setMsg({ type: "ok", text: `${email} har lagts till i teamet.` })
+        setMsg({
+          type: "ok",
+          text: `${email} är inbjuden och kopplad till teamet. De loggar in via inloggningssidan med sin e-post.`,
+        })
         setEmail("")
+        setRole("member")
         router.refresh()
       } else {
         setMsg({ type: "err", text: data?.message ?? "Kunde inte bjuda in." })
@@ -94,6 +99,15 @@ export function TeamPanel({
               aria-label="E-postadress"
               className="w-full flex-1 rounded-[11px] border border-[var(--line-warm)] bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-[var(--bundla-orange)]"
             />
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as "member" | "admin")}
+              aria-label="Roll"
+              className="rounded-[11px] border border-[var(--line-warm)] bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-[var(--bundla-orange)]"
+            >
+              <option value="member">Medlem</option>
+              <option value="admin">Admin</option>
+            </select>
             <button
               type="submit"
               disabled={inviting || !email}
