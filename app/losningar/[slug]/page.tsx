@@ -77,11 +77,11 @@ export default async function SolutionPage({
             {p}
           </p>
         ))}
-        <div className="mt-8 flex flex-wrap gap-3.5">
-          <Link href="/studio" className="btn-brand inline-flex items-center gap-2 rounded-[11px] px-7 py-3.5 text-base font-semibold">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
+          <Link href="/studio" className="btn-brand inline-flex w-full items-center justify-center gap-2 rounded-[11px] px-7 py-3.5 text-base font-semibold sm:w-auto">
             Öppna Studio →
           </Link>
-          <Link href="/losningar" className="inline-flex items-center rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface)] px-7 py-3.5 text-base font-semibold transition-colors hover:bg-white">
+          <Link href="/losningar" className="inline-flex w-full items-center justify-center rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface)] px-7 py-3.5 text-base font-semibold transition-colors hover:bg-white sm:w-auto">
             Alla lösningar
           </Link>
         </div>
@@ -148,16 +148,16 @@ export default async function SolutionPage({
 
       {/* CTA */}
       <section className="mx-auto max-w-[1200px] px-6 pb-24 sm:px-10">
-        <div className="relative overflow-hidden rounded-[28px] px-8 py-14 sm:px-14 sm:py-16" style={{ background: "var(--gradient-brand-cta)" }}>
+        <div className="relative overflow-hidden rounded-[28px] px-6 py-12 sm:px-14 sm:py-16" style={{ background: "var(--gradient-brand-cta)" }}>
           <div className="absolute -right-16 -top-16 h-80 w-80 rounded-full bg-white/10" />
           <div className="relative max-w-[560px]">
             <h2 className="font-display text-[32px] font-bold leading-none text-white sm:text-[42px]">{s.ctaTitle}</h2>
             <p className="mt-4 text-[18px] leading-relaxed text-[#FFEAD8]">{s.ctaText}</p>
-            <div className="mt-8 flex flex-wrap gap-3.5">
-              <Link href="/studio" className="inline-flex items-center gap-2 rounded-[11px] bg-ink px-7 py-3.5 text-base font-semibold text-white transition-transform active:translate-y-px">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
+              <Link href="/studio" className="inline-flex w-full items-center justify-center gap-2 rounded-[11px] bg-ink px-7 py-3.5 text-base font-semibold text-white transition-transform active:translate-y-px sm:w-auto">
                 Öppna Studio →
               </Link>
-              <a href="mailto:jakob.radback@markable.se" className="inline-flex items-center rounded-[11px] bg-white/90 px-7 py-3.5 text-base font-semibold text-ink transition-colors hover:bg-white">
+              <a href="mailto:jakob.radback@markable.se" className="inline-flex w-full items-center justify-center rounded-[11px] bg-white/90 px-7 py-3.5 text-base font-semibold text-ink transition-colors hover:bg-white sm:w-auto">
                 Kontakta oss
               </a>
             </div>
