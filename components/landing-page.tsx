@@ -58,6 +58,7 @@ export function LandingPage() {
           <span className="font-display text-[23px] font-bold tracking-[-0.02em]">Bundla</span>
         </Link>
         <nav className="hidden items-center gap-8 text-[15px] font-medium text-ink-body md:flex">
+          <Link href="/losningar" className="transition-colors hover:text-ink">Lösningar</Link>
           <a href="#sa-funkar" className="transition-colors hover:text-ink">Så funkar det</a>
           <a href="#priser" className="transition-colors hover:text-ink">Priser</a>
           <a href="#faq" className="transition-colors hover:text-ink">Vanliga frågor</a>
@@ -295,7 +296,9 @@ export function LandingPage() {
             <span className="font-display text-[18px] font-bold tracking-[-0.02em]">Bundla</span>
           </div>
           <div className="text-sm text-ink-muted">© 2026 Bundla · Bundling-bilder för e-handel</div>
-          <div className="flex gap-6 text-sm font-medium text-ink-body">
+          <div className="flex flex-wrap gap-6 text-sm font-medium text-ink-body">
+            <Link href="/losningar" className="transition-colors hover:text-ink">Lösningar</Link>
+            <Link href="/docs" className="transition-colors hover:text-ink">Hjälp</Link>
             <Link href="/integritetspolicy" className="transition-colors hover:text-ink">Integritet</Link>
             <Link href="/villkor" className="transition-colors hover:text-ink">Villkor</Link>
             <a href="mailto:jakob.radback@markable.se" className="transition-colors hover:text-ink">Kontakt</a>
