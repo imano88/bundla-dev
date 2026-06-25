@@ -292,6 +292,69 @@ function removeSmallIslands(blob: Blob, minFraction = 0.02): Promise<Blob> {
   })
 }
 
+// Sends an image to our Photoroom proxy route and returns the cut-out PNG blob.
+async function photoroomRemove(dataUrl: string): Promise<Blob> {
+  const inputBlob = await (await fetch(dataUrl)).blob()
+  const resp = await fetch("/api/remove-bg", {
+    method: "POST",
+    headers: { "content-type": "image/png" },
+    body: inputBlob,
+  })
+  if (!resp.ok) {
+    let message = "Photoroom misslyckades"
+    try {
+      const j = await resp.json()
+      if (j?.message) message = j.message
+    } catch {
+      // non-JSON error — keep generic message
+    }
+    throw new Error(message)
+  }
+  return resp.blob()
+}
+
+// Lays the two original product images side by side on a white canvas so a
+// SINGLE background-removal call covers both (one Photoroom credit per bundle).
+// Returns the combined data URL plus the horizontal fraction to split it back.
+async function combineSideBySide(
+  srcA: string,
+  srcB: string,
+  targetH = 1200,
+  gap = 100
+): Promise<{ dataUrl: string; splitFraction: number }> {
+  const [a, b] = await Promise.all([loadImage(srcA), loadImage(srcB)])
+  const wA = Math.max(1, Math.round((a.naturalWidth / a.naturalHeight) * targetH))
+  const wB = Math.max(1, Math.round((b.naturalWidth / b.naturalHeight) * targetH))
+  const totalW = wA + gap + wB
+  const canvas = document.createElement("canvas")
+  canvas.width = totalW
+  canvas.height = targetH
+  const ctx = canvas.getContext("2d")!
+  ctx.fillStyle = "#ffffff"
+  ctx.fillRect(0, 0, totalW, targetH)
+  ctx.imageSmoothingQuality = "high"
+  ctx.drawImage(a, 0, 0, wA, targetH)
+  ctx.drawImage(b, wA + gap, 0, wB, targetH)
+  return { dataUrl: canvas.toDataURL("image/png"), splitFraction: (wA + gap / 2) / totalW }
+}
+
+// Splits a combined cut-out into left/right halves at the given fraction.
+async function splitByFraction(blob: Blob, splitFraction: number): Promise<[string, string]> {
+  const url = URL.createObjectURL(blob)
+  const img = await loadImage(url)
+  URL.revokeObjectURL(url)
+  const W = img.naturalWidth, H = img.naturalHeight
+  const splitX = Math.min(W - 1, Math.max(1, Math.round(W * splitFraction)))
+  const crop = (sx: number, sw: number) => {
+    const c = document.createElement("canvas")
+    c.width = sw
+    c.height = H
+    c.getContext("2d")!.drawImage(img, sx, 0, sw, H, 0, 0, sw, H)
+    return c.toDataURL("image/png")
+  }
+  return [crop(0, splitX), crop(splitX, W - splitX)]
+}
+
 export function ProductCompositor() {
   const [images, setImages] = useState<[ImageState, ImageState]>([
     makeEmptyState(),
@@ -304,6 +367,7 @@ export function ProductCompositor() {
   const [padding, setPadding] = useState(30)
   const [gap, setGap] = useState(20)
   const [showPlus, setShowPlus] = useState(true)
+  const [engine, setEngine] = useState<"builtin" | "photoroom">("builtin")
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
@@ -336,6 +400,17 @@ export function ProductCompositor() {
 
       if (!autoRemoveBg) return
 
+      if (engine === "photoroom") {
+        // Paid API: don't auto-process on drop. Show the original and wait for
+        // the explicit "Frilägg med Photoroom" action (one combined call).
+        setImages((prev) => {
+          const next = [...prev] as [ImageState, ImageState]
+          next[index] = { ...next[index], element: originalElement ?? null, status: "done" }
+          return next
+        })
+        return
+      }
+
       // Yield to the browser so the UI re-renders before heavy processing
       await new Promise<void>((r) => setTimeout(r, 0))
 
@@ -349,12 +424,11 @@ export function ProductCompositor() {
           return next
         })
 
-        // Yield again before the heavy ONNX inference
+        // Yield again before the heavy processing
         await new Promise<void>((r) => setTimeout(r, 0))
 
-        // Step 2: AI background removal in a Web Worker so the main thread stays
-        // responsive — both product images can be dropped and processed at once.
-        // (Full-precision ISNet model: isnet_fp16 struggles with white-on-white.)
+        // Built-in AI background removal in a Web Worker so the main thread
+        // stays responsive — both images can be dropped and processed at once.
         const rawBlob = await removeProductBackground(pngDataUrl)
 
         setImages((prev) => {
@@ -363,9 +437,8 @@ export function ProductCompositor() {
           return next
         })
 
-        // Step 3: cleanup — border flood-fill refine (recovers faint white
-        // bodies, kills ghosts, solidifies interior, keeps edges smooth), then
-        // drop stray specks/islands.
+        // Cleanup: border flood-fill refine (recovers faint white bodies,
+        // kills ghosts, solidifies interior, smooth edges) then drop specks.
         const refinedBlob = await refineMatte(rawBlob, pngDataUrl)
         const blob = await removeSmallIslands(refinedBlob)
         const url = URL.createObjectURL(blob)
@@ -386,14 +459,70 @@ export function ProductCompositor() {
             ...next[index],
             element: fallbackEl,
             status: "error",
-            error: "Bakgrundsborttagning misslyckades – använder originalbild.",
+            error:
+              err instanceof Error && /Photoroom/i.test(err.message)
+                ? err.message
+                : "Bakgrundsborttagning misslyckades – använder originalbild.",
           }
           return next
         })
       }
     },
-    [autoRemoveBg]
+    [autoRemoveBg, engine]
   )
+
+  // Photoroom: combine both originals -> ONE removal call -> split back, so a
+  // bundle costs a single credit instead of two.
+  const runPhotoroom = useCallback(async () => {
+    const a = images[0].original
+    const b = images[1].original
+    const haveA = !!a
+    const haveB = !!b
+    if (!haveA && !haveB) return
+
+    setImages((prev) => {
+      const next = [...prev] as [ImageState, ImageState]
+      if (haveA) next[0] = { ...next[0], status: "segmenting", error: null }
+      if (haveB) next[1] = { ...next[1], status: "segmenting", error: null }
+      return next
+    })
+
+    try {
+      if (haveA && haveB) {
+        const { dataUrl, splitFraction } = await combineSideBySide(a, b)
+        const cutout = await photoroomRemove(dataUrl)
+        const [leftUrl, rightUrl] = await splitByFraction(cutout, splitFraction)
+        const [leftImg, rightImg] = await Promise.all([loadImage(leftUrl), loadImage(rightUrl)])
+        setImages((prev) => {
+          const next = [...prev] as [ImageState, ImageState]
+          next[0] = { ...next[0], processed: leftUrl, element: leftImg, status: "done" }
+          next[1] = { ...next[1], processed: rightUrl, element: rightImg, status: "done" }
+          return next
+        })
+      } else {
+        const idx = (haveA ? 0 : 1) as 0 | 1
+        const src = (haveA ? a : b) as string
+        const norm = await normalizeImageToPng(src)
+        const cutout = await photoroomRemove(norm)
+        const url = URL.createObjectURL(cutout)
+        const img = await loadImage(url)
+        setImages((prev) => {
+          const next = [...prev] as [ImageState, ImageState]
+          next[idx] = { ...next[idx], processed: url, element: img, status: "done" }
+          return next
+        })
+      }
+    } catch (err) {
+      console.error("[photoroom] error:", err)
+      const message = err instanceof Error ? err.message : "Photoroom misslyckades"
+      setImages((prev) => {
+        const next = [...prev] as [ImageState, ImageState]
+        if (haveA) next[0] = { ...next[0], status: "error", error: message }
+        if (haveB) next[1] = { ...next[1], status: "error", error: message }
+        return next
+      })
+    }
+  }, [images])
 
   const handleImageChange = (dataUrl: string, file: File, index: 0 | 1) => {
     processImage(dataUrl, file, index)
@@ -534,6 +663,63 @@ export function ProductCompositor() {
                     aria-label="Automatisk bakgrundsborttagning"
                   />
                 </div>
+
+                {/* Friläggningsmetod */}
+                {autoRemoveBg && (
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Friläggningsmetod
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEngine("builtin")}
+                        aria-pressed={engine === "builtin"}
+                        className={cn(
+                          "rounded-md border-2 px-3 py-2 text-xs font-medium transition-all",
+                          engine === "builtin"
+                            ? "border-accent bg-accent/5 text-foreground"
+                            : "border-border text-muted-foreground hover:border-accent/50"
+                        )}
+                      >
+                        Inbyggd AI
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEngine("photoroom")}
+                        aria-pressed={engine === "photoroom"}
+                        className={cn(
+                          "rounded-md border-2 px-3 py-2 text-xs font-medium transition-all",
+                          engine === "photoroom"
+                            ? "border-accent bg-accent/5 text-foreground"
+                            : "border-border text-muted-foreground hover:border-accent/50"
+                        )}
+                      >
+                        Photoroom
+                      </button>
+                    </div>
+
+                    {engine === "photoroom" && (
+                      <>
+                        <Button
+                          onClick={runPhotoroom}
+                          disabled={!hasAnyImage || isProcessing}
+                          className="mt-1 w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
+                        >
+                          {isProcessing ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Wand2 className="h-4 w-4" />
+                          )}
+                          Frilägg med Photoroom
+                        </Button>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Slår ihop båda bilderna till ett anrop – 1 kredit per bundle.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <div className="h-px bg-border" />
 
