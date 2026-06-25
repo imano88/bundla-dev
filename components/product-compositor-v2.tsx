@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { Download, Loader2, Settings2, Wand2, AlertCircle, Plus } from "lucide-react"
+import { Download, Loader2, Settings2, Wand2, AlertCircle, Plus, Layers } from "lucide-react"
 import { removeProductBackground } from "@/lib/bg-remover"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -571,20 +571,27 @@ export function ProductCompositor() {
   const displayRight = images[1].processed || images[1].original || null
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-background to-secondary/40">
       {/* Header */}
-      <header className="border-b border-border bg-card px-6 py-4">
+      <header className="sticky top-0 z-20 border-b border-border/60 bg-card/70 px-6 py-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Bildkompositor</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Kombinera två produktbilder för bundlingens produktsida
-            </p>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground shadow-sm shadow-accent/25">
+              <Layers className="h-[18px] w-[18px]" />
+            </div>
+            <div>
+              <h1 className="text-[15px] font-semibold leading-none tracking-tight text-foreground">
+                Bundla
+              </h1>
+              <p className="mt-1 text-[11px] leading-none text-muted-foreground">
+                Bundling-bilder för e-handel
+              </p>
+            </div>
           </div>
           <Button
             onClick={handleExport}
             disabled={!hasAnyImage || isProcessing}
-            className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
+            className="gap-2 bg-accent text-accent-foreground shadow-sm shadow-accent/25 transition-all hover:bg-accent/90 hover:shadow-md hover:shadow-accent/25 active:scale-[0.98]"
           >
             {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -599,7 +606,7 @@ export function ProductCompositor() {
       <main className="flex-1 px-6 py-8">
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_1fr_360px]">
           {/* Left image upload */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 animate-rise">
             <ImageDropZone
               label="Dra och släpp eller klicka för att välja"
               image={displayLeft}
@@ -611,7 +618,7 @@ export function ProductCompositor() {
           </div>
 
           {/* Right image upload */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 animate-rise [animation-delay:80ms]">
             <ImageDropZone
               label="Dra och släpp eller klicka för att välja"
               image={displayRight}
@@ -623,7 +630,7 @@ export function ProductCompositor() {
           </div>
 
           {/* Settings panel */}
-          <aside className="flex flex-col gap-6">
+          <aside className="flex flex-col gap-6 animate-rise [animation-delay:160ms]">
             {/* Preview */}
             <CompositorCanvas
               leftImage={leftElement}
@@ -637,10 +644,10 @@ export function ProductCompositor() {
             />
 
             {/* Settings */}
-            <div className="rounded-lg border border-border bg-card p-5">
+            <div className="rounded-xl border border-border/70 bg-card p-5 shadow-sm">
               <div className="mb-4 flex items-center gap-2">
                 <Settings2 className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold text-foreground">Inställningar</h2>
+                <h2 className="text-sm font-semibold tracking-tight text-foreground">Inställningar</h2>
               </div>
 
               <div className="flex flex-col gap-5">
@@ -841,7 +848,7 @@ export function ProductCompositor() {
             <Button
               onClick={handleExport}
               disabled={!hasAnyImage || isProcessing}
-              className="lg:hidden gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
+              className="lg:hidden gap-2 bg-accent text-accent-foreground shadow-sm shadow-accent/25 transition-all hover:bg-accent/90 active:scale-[0.98]"
             >
               {isProcessing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

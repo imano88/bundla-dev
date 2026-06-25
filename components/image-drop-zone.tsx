@@ -85,27 +85,34 @@ export function ImageDropZone({
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         className={cn(
-          "relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-all",
+          "group relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-all duration-300 ease-out",
           isDragging
-            ? "border-accent bg-accent/5 scale-[1.01]"
+            ? "scale-[1.01] border-accent bg-accent/5 shadow-lg shadow-accent/10"
             : image
-            ? "border-border bg-card"
-            : "border-border bg-secondary/50 hover:border-accent/60 hover:bg-accent/5"
+            ? "border-solid border-border bg-card shadow-sm"
+            : "border-border bg-secondary/40 hover:-translate-y-0.5 hover:border-accent/60 hover:bg-accent/5 hover:shadow-md"
         )}
       >
         {image ? (
           <img
             src={image}
             alt={label}
-            className="h-full w-full object-contain p-3"
+            className="h-full w-full object-contain p-3 transition-transform duration-300"
           />
         ) : (
           <div className="flex flex-col items-center gap-3 p-6 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
+            <div
+              className={cn(
+                "flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300",
+                isDragging
+                  ? "scale-110 bg-accent/15"
+                  : "bg-secondary group-hover:scale-105 group-hover:bg-accent/10"
+              )}
+            >
               {isDragging ? (
                 <ImageIcon className="h-6 w-6 text-accent" />
               ) : (
-                <Upload className="h-6 w-6 text-muted-foreground" />
+                <Upload className="h-6 w-6 text-muted-foreground transition-colors group-hover:text-accent" />
               )}
             </div>
             <div>

@@ -213,14 +213,16 @@ export function CompositorCanvas({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">Förhandsgranskning</span>
+        <span className="text-sm font-medium tracking-tight text-foreground">Förhandsgranskning</span>
         {hasContent && (
-          <span className="text-xs text-muted-foreground">1000 × 1000 px</span>
+          <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+            1000 × 1000
+          </span>
         )}
       </div>
       <div
         className={cn(
-          "relative w-full overflow-hidden rounded-lg border border-border",
+          "relative w-full overflow-hidden rounded-xl border border-border/70 shadow-sm ring-1 ring-black/[0.03] transition-shadow",
           "bg-[repeating-conic-gradient(#d1d5db_0%_25%,#f9fafb_0%_50%)] bg-[length:12px_12px]"
         )}
         style={{ aspectRatio: "1 / 1" }}

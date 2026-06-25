@@ -7,8 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Bildkompositor - Bundlingverktyg',
-  description: 'Kombinera produktbilder för e-handel. Lägg två produkter sida vid sida med automatisk bakgrundsborttagning.',
+  title: 'Bundla — Bundling-bilder för e-handel',
+  description: 'Skapa snygga bundling-produktbilder. Lägg två produkter sida vid sida med automatisk friläggning.',
   generator: 'v0.app',
   icons: {
     icon: [
