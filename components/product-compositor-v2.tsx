@@ -1,10 +1,8 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { Download, Loader2, Settings2, Wand2, AlertCircle, Plus, Layers } from "lucide-react"
+import { Download, Loader2, Info, AlertCircle } from "lucide-react"
 import { removeProductBackground } from "@/lib/bg-remover"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ImageDropZone } from "@/components/image-drop-zone"
@@ -569,297 +567,320 @@ export function ProductCompositor() {
 
   const displayLeft = images[0].processed || images[0].original || null
   const displayRight = images[1].processed || images[1].original || null
+  const anyProcessed = images.some((img) => img.processed)
+  const engineLabel = engine === "photoroom" ? "Photoroom" : "Inbyggd AI"
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-background to-secondary/40">
-      {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-border/60 bg-card/70 px-6 py-3 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground shadow-sm shadow-accent/25">
-              <Layers className="h-[18px] w-[18px]" />
-            </div>
-            <div>
-              <h1 className="text-[15px] font-semibold leading-none tracking-tight text-foreground">
-                Bundla
-              </h1>
-              <p className="mt-1 text-[11px] leading-none text-muted-foreground">
-                Bundling-bilder för e-handel
-              </p>
+    <div className="flex min-h-screen flex-col bg-[var(--app-bg)] text-ink">
+      {/* Top bar */}
+      <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[var(--line-warm)] bg-[var(--surface)] px-5 sm:px-6">
+        <div className="flex items-center gap-2.5">
+          <svg width="30" height="30" viewBox="0 0 60 60" fill="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="bundlaMark" x1="0" y1="0" x2="1" y2="1">
+                <stop stopColor="#FF8A2B" />
+                <stop offset="1" stopColor="#FFB05C" />
+              </linearGradient>
+            </defs>
+            <rect x="6" y="6" width="33" height="33" rx="10" fill="url(#bundlaMark)" />
+            <rect x="21" y="21" width="33" height="33" rx="10" fill="#FF6A00" />
+          </svg>
+          <div className="leading-none">
+            <div className="font-display text-[19px] font-bold tracking-[-0.02em]">Bundla</div>
+            <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-ink-ghost">
+              Studio
             </div>
           </div>
-          <Button
+        </div>
+        <div className="flex items-center gap-3">
+          <a
+            href="/docs"
+            className="hidden items-center gap-2 rounded-[11px] border border-[var(--line-strong)] bg-white px-4 py-2.5 text-sm font-semibold text-ink-body transition-colors hover:bg-[var(--surface)] sm:inline-flex"
+          >
+            <Info className="h-4 w-4" />
+            Hjälp
+          </a>
+          <button
             onClick={handleExport}
             disabled={!hasAnyImage || isProcessing}
-            className="gap-2 bg-accent text-accent-foreground shadow-sm shadow-accent/25 transition-all hover:bg-accent/90 hover:shadow-md hover:shadow-accent/25 active:scale-[0.98]"
+            className="btn-brand inline-flex items-center gap-2 rounded-[11px] px-5 py-2.5 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50"
           >
             {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Download className="h-4 w-4" />
             )}
-            {isProcessing ? "Bearbetar..." : "Exportera PNG"}
-          </Button>
+            {isProcessing ? "Bearbetar…" : "Exportera PNG"}
+          </button>
         </div>
       </header>
 
-      <main className="flex-1 px-6 py-8">
-        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_1fr_360px]">
-          {/* Left image upload */}
-          <div className="flex flex-col gap-4 animate-rise">
-            <ImageDropZone
-              label="Dra och släpp eller klicka för att välja"
-              image={displayLeft}
-              onImageChange={(url, file) => handleImageChange(url, file, 0)}
-              onRemove={() => handleRemove(0)}
-              index={0}
-            />
-            <ImageStatusBadge state={images[0]} />
+      {/* Workspace */}
+      <div className="grid flex-1 grid-cols-1 lg:h-[calc(100dvh-65px)] lg:grid-cols-[300px_1fr_340px]">
+        {/* Källbilder */}
+        <aside className="animate-rise border-b border-[var(--line-warm)] bg-[var(--paper)] p-6 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+          <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-ghost">
+            Källbilder
           </div>
 
-          {/* Right image upload */}
-          <div className="flex flex-col gap-4 animate-rise [animation-delay:80ms]">
-            <ImageDropZone
-              label="Dra och släpp eller klicka för att välja"
-              image={displayRight}
-              onImageChange={(url, file) => handleImageChange(url, file, 1)}
-              onRemove={() => handleRemove(1)}
-              index={1}
-            />
-            <ImageStatusBadge state={images[1]} />
+          <div className="mb-2.5 flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[var(--tint-orange)] font-display text-[11px] font-bold text-[var(--bundla-orange-deep)]">
+              1
+            </span>
+            <span className="text-sm font-semibold">Produkt 1</span>
+          </div>
+          <ImageDropZone
+            label="Dra in bild"
+            image={displayLeft}
+            onImageChange={(url, file) => handleImageChange(url, file, 0)}
+            onRemove={() => handleRemove(0)}
+            index={0}
+          />
+          <ImageStatusBadge state={images[0]} />
+
+          <div className="my-3 flex justify-center">
+            <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full border border-[var(--line-warm)] bg-white font-display text-[17px] font-semibold text-[var(--bundla-orange)]">
+              +
+            </div>
           </div>
 
-          {/* Settings panel */}
-          <aside className="flex flex-col gap-6 animate-rise [animation-delay:160ms]">
-            {/* Preview */}
-            <CompositorCanvas
-              leftImage={leftElement}
-              rightImage={rightElement}
-              backgroundColor={bgColor}
-              transparent={transparentBg}
-              padding={padding}
-              gap={gap}
-              showPlus={showPlus}
-              onCanvasReady={handleCanvasReady}
-            />
+          <div className="mb-2.5 flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[var(--tint-orange)] font-display text-[11px] font-bold text-[var(--bundla-orange-deep)]">
+              2
+            </span>
+            <span className="text-sm font-semibold">Produkt 2</span>
+          </div>
+          <ImageDropZone
+            label="Dra in bild"
+            image={displayRight}
+            onImageChange={(url, file) => handleImageChange(url, file, 1)}
+            onRemove={() => handleRemove(1)}
+            index={1}
+          />
+          <ImageStatusBadge state={images[1]} />
 
-            {/* Settings */}
-            <div className="rounded-xl border border-border/70 bg-card p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <Settings2 className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold tracking-tight text-foreground">Inställningar</h2>
+          <div className="mt-5 border-t border-[var(--line-warm)] pt-3.5 font-mono text-[10px] uppercase leading-relaxed tracking-[0.08em] text-[#b3a995]">
+            PNG · WebP · JPG
+            <br />
+            upp till 20 MB per bild
+          </div>
+        </aside>
+
+        {/* Förhandsvisning */}
+        <main className="animate-rise flex min-w-0 flex-col p-6 [animation-delay:80ms] sm:p-8">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-ghost">
+              Förhandsvisning
+            </div>
+            {(isProcessing || hasAnyImage) && (
+              <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-[var(--line-warm)] bg-white px-3 py-1.5 text-xs text-ink-body">
+                <span
+                  className={cn(
+                    "h-[7px] w-[7px] rounded-full",
+                    isProcessing
+                      ? "animate-pulse bg-[var(--bundla-orange)]"
+                      : anyProcessed
+                      ? "bg-[var(--success)]"
+                      : "bg-ink-ghost"
+                  )}
+                />
+                {isProcessing
+                  ? "Bearbetar…"
+                  : anyProcessed
+                  ? `Friställd · ${engineLabel}`
+                  : "Original"}
               </div>
+            )}
+          </div>
 
-              <div className="flex flex-col gap-5">
-                {/* Auto BG removal toggle */}
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Wand2 className="h-4 w-4 text-accent" />
-                    <div>
-                      <Label className="text-sm font-medium cursor-pointer">
-                        Ta bort bakgrund automatiskt
-                      </Label>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        AI klipper ut produkten
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={autoRemoveBg}
-                    onCheckedChange={setAutoRemoveBg}
-                    aria-label="Automatisk bakgrundsborttagning"
-                  />
+          <CompositorCanvas
+            leftImage={leftElement}
+            rightImage={rightElement}
+            backgroundColor={bgColor}
+            transparent={transparentBg}
+            padding={padding}
+            gap={gap}
+            showPlus={showPlus}
+            onCanvasReady={handleCanvasReady}
+          />
+
+          <p className="mt-4 text-center text-xs text-ink-ghost">
+            {hasAnyImage
+              ? "Färdig bundle · 1000 × 1000 px"
+              : "Dra in två bilder till vänster för att börja"}
+          </p>
+        </main>
+
+        {/* Inställningar */}
+        <aside className="animate-rise border-t border-[var(--line-warm)] bg-[var(--surface)] p-6 [animation-delay:160ms] lg:overflow-y-auto lg:border-t-0 lg:border-l">
+          <h2 className="mb-5 font-display text-[17px] font-bold tracking-[-0.02em]">Inställningar</h2>
+
+          <div className="flex flex-col">
+            {/* Auto BG removal */}
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--line-soft)] pb-5">
+              <div>
+                <div className="text-sm font-semibold">Ta bort bakgrund automatiskt</div>
+                <p className="mt-0.5 text-xs text-ink-muted">AI klipper ut produkten</p>
+              </div>
+              <Switch
+                checked={autoRemoveBg}
+                onCheckedChange={setAutoRemoveBg}
+                aria-label="Automatisk bakgrundsborttagning"
+              />
+            </div>
+
+            {/* Friläggningsmetod */}
+            {autoRemoveBg && (
+              <div className="border-b border-[var(--line-soft)] py-5">
+                <div className="mb-3 text-[13px] font-semibold">Friläggningsmetod</div>
+                <div className="grid grid-cols-2 gap-2 rounded-[11px] bg-[var(--surface-sunken)] p-1">
+                  {(["builtin", "photoroom"] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setEngine(opt)}
+                      aria-pressed={engine === opt}
+                      className={cn(
+                        "rounded-lg py-2 text-[13px] font-semibold transition-all",
+                        engine === opt
+                          ? "bg-white text-ink shadow-[0_1px_4px_rgba(60,40,15,0.16)]"
+                          : "text-ink-muted hover:text-ink"
+                      )}
+                    >
+                      {opt === "builtin" ? "Inbyggd AI" : "Photoroom"}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Friläggningsmetod */}
-                {autoRemoveBg && (
-                  <div className="flex flex-col gap-2">
-                    <Label className="text-xs font-medium text-muted-foreground">
-                      Friläggningsmetod
-                    </Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setEngine("builtin")}
-                        aria-pressed={engine === "builtin"}
-                        className={cn(
-                          "rounded-md border-2 px-3 py-2 text-xs font-medium transition-all",
-                          engine === "builtin"
-                            ? "border-accent bg-accent/5 text-foreground"
-                            : "border-border text-muted-foreground hover:border-accent/50"
-                        )}
-                      >
-                        Inbyggd AI
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEngine("photoroom")}
-                        aria-pressed={engine === "photoroom"}
-                        className={cn(
-                          "rounded-md border-2 px-3 py-2 text-xs font-medium transition-all",
-                          engine === "photoroom"
-                            ? "border-accent bg-accent/5 text-foreground"
-                            : "border-border text-muted-foreground hover:border-accent/50"
-                        )}
-                      >
-                        Photoroom
-                      </button>
-                    </div>
-
-                    {engine === "photoroom" && (
-                      <>
-                        <Button
-                          onClick={runPhotoroom}
-                          disabled={!hasAnyImage || isProcessing}
-                          className="mt-1 w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
-                        >
-                          {isProcessing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Wand2 className="h-4 w-4" />
-                          )}
-                          Frilägg med Photoroom
-                        </Button>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Slår ihop båda bilderna till ett anrop – 1 kredit per bundle.
-                        </p>
-                      </>
-                    )}
-                  </div>
+                {engine === "photoroom" && (
+                  <>
+                    <button
+                      onClick={runPhotoroom}
+                      disabled={!hasAnyImage || isProcessing}
+                      className="btn-brand mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[11px] px-4 py-2.5 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                      Frilägg med Photoroom
+                    </button>
+                    <p className="mt-2 text-xs text-ink-muted">
+                      Slår ihop båda bilderna till ett anrop — 1 kredit per bundle.
+                    </p>
+                  </>
                 )}
+              </div>
+            )}
 
-                <div className="h-px bg-border" />
+            {/* Plustecken */}
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--line-soft)] py-5">
+              <div>
+                <div className="text-sm font-semibold">Visa plustecken</div>
+                <p className="mt-0.5 text-xs text-ink-muted">Lägger ett "+" mellan produkterna</p>
+              </div>
+              <Switch
+                checked={showPlus}
+                onCheckedChange={setShowPlus}
+                aria-label="Visa plustecken mellan produkterna"
+              />
+            </div>
 
-                {/* Plus separator toggle */}
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Plus className="h-4 w-4 text-accent" />
-                    <div>
-                      <Label className="text-sm font-medium cursor-pointer">
-                        Visa plustecken
-                      </Label>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Lägger ett "+" mellan produkterna
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={showPlus}
-                    onCheckedChange={setShowPlus}
-                    aria-label="Visa plustecken mellan produkterna"
-                  />
-                </div>
-
-                <div className="h-px bg-border" />
-
-                {/* Background color */}
-                <div className="flex flex-col gap-3">
-                  <Label className="text-sm font-medium">Bakgrundsfärg</Label>
-
-                  {/* Transparent option */}
+            {/* Bakgrundsfärg */}
+            <div className="border-b border-[var(--line-soft)] py-5">
+              <div className="mb-3 text-[13px] font-semibold">Bakgrundsfärg</div>
+              <button
+                onClick={() => setTransparentBg(true)}
+                aria-label="Transparent bakgrund"
+                className={cn(
+                  "mb-3 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all",
+                  transparentBg
+                    ? "border-[1.5px] border-[var(--bundla-orange)] bg-white text-ink-body"
+                    : "border border-[var(--line-warm)] bg-white text-ink-muted hover:border-[var(--bundla-orange)]/50"
+                )}
+              >
+                <span
+                  className="checker h-[22px] w-[22px] shrink-0 rounded-md border border-[#e3e6e8]"
+                  aria-hidden="true"
+                />
+                Transparent bakgrund (PNG)
+              </button>
+              <div className="mb-3 grid grid-cols-6 gap-2">
+                {PRESET_COLORS.map((color) => (
                   <button
-                    onClick={() => setTransparentBg(true)}
-                    aria-label="Transparent bakgrund"
+                    key={color.value}
+                    title={color.label}
+                    aria-label={`Bakgrundsfärg: ${color.label}`}
+                    onClick={() => handleColorChange(color.value)}
                     className={cn(
-                      "flex items-center gap-2 rounded-md border-2 px-3 py-2 text-xs transition-all",
-                      transparentBg
-                        ? "border-accent bg-accent/5 text-foreground"
-                        : "border-border text-muted-foreground hover:border-accent/50"
+                      "aspect-square rounded-[9px] border-2 transition-all hover:scale-105",
+                      !transparentBg && bgColor === color.value
+                        ? "border-[var(--bundla-orange)]"
+                        : "border-black/10"
                     )}
-                  >
-                    <span
-                      className="h-5 w-5 rounded shrink-0 border border-border bg-[repeating-conic-gradient(#d1d5db_0%_25%,#f9fafb_0%_50%)] bg-[length:8px_8px]"
-                      aria-hidden="true"
-                    />
-                    <span>Transparent bakgrund (PNG)</span>
-                  </button>
-
-                  <div className="grid grid-cols-6 gap-2">
-                    {PRESET_COLORS.map((color) => (
-                      <button
-                        key={color.value}
-                        title={color.label}
-                        aria-label={`Bakgrundsfärg: ${color.label}`}
-                        onClick={() => handleColorChange(color.value)}
-                        className={cn(
-                          "aspect-square rounded-md border-2 transition-all hover:scale-110",
-                          !transparentBg && bgColor === color.value
-                            ? "border-accent shadow-sm"
-                            : "border-border"
-                        )}
-                        style={{ backgroundColor: color.value }}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground shrink-0">Eget:</Label>
-                    <div className="relative flex items-center">
-                      <input
-                        type="color"
-                        value={customColor}
-                        onChange={(e) => handleColorChange(e.target.value)}
-                        className="h-8 w-8 cursor-pointer rounded border border-border p-0.5 bg-card"
-                        aria-label="Valfri bakgrundsfärg"
-                      />
-                    </div>
-                    <span className="text-xs font-mono text-muted-foreground">
-                      {transparentBg ? "TRANSPARENT" : bgColor.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="h-px bg-border" />
-
-                {/* Padding slider */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">Inre marginal</Label>
-                    <span className="text-xs font-mono text-muted-foreground">{padding}px</span>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={200}
-                    step={10}
-                    value={[padding]}
-                    onValueChange={([v]) => setPadding(v)}
-                    aria-label="Inre marginal"
+                    style={{ backgroundColor: color.value }}
                   />
-                </div>
-
-                {/* Gap slider */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">Mellanrum</Label>
-                    <span className="text-xs font-mono text-muted-foreground">{gap}px</span>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={200}
-                    step={10}
-                    value={[gap]}
-                    onValueChange={([v]) => setGap(v)}
-                    aria-label="Mellanrum mellan produkter"
-                  />
-                </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 text-xs text-ink-muted">Eget:</span>
+                <input
+                  type="color"
+                  value={customColor}
+                  onChange={(e) => handleColorChange(e.target.value)}
+                  className="h-8 w-8 cursor-pointer rounded-md border border-[var(--line-warm)] bg-white p-0.5"
+                  aria-label="Valfri bakgrundsfärg"
+                />
+                <span className="font-mono text-xs text-ink-muted">
+                  {transparentBg ? "TRANSPARENT" : bgColor.toUpperCase()}
+                </span>
               </div>
             </div>
 
-            {/* Export button mobile */}
-            <Button
+            {/* Inre marginal */}
+            <div className="border-b border-[var(--line-soft)] py-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[13px] font-semibold">Inre marginal</span>
+                <span className="font-mono text-xs text-[var(--bundla-orange)]">{padding}px</span>
+              </div>
+              <Slider
+                min={0}
+                max={200}
+                step={10}
+                value={[padding]}
+                onValueChange={([v]) => setPadding(v)}
+                aria-label="Inre marginal"
+              />
+            </div>
+
+            {/* Mellanrum */}
+            <div className="py-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[13px] font-semibold">Mellanrum</span>
+                <span className="font-mono text-xs text-[var(--bundla-orange)]">{gap}px</span>
+              </div>
+              <Slider
+                min={0}
+                max={200}
+                step={10}
+                value={[gap]}
+                onValueChange={([v]) => setGap(v)}
+                aria-label="Mellanrum mellan produkter"
+              />
+            </div>
+
+            {/* Mobile export */}
+            <button
               onClick={handleExport}
               disabled={!hasAnyImage || isProcessing}
-              className="lg:hidden gap-2 bg-accent text-accent-foreground shadow-sm shadow-accent/25 transition-all hover:bg-accent/90 active:scale-[0.98]"
+              className="btn-brand mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[11px] px-5 py-3 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50 lg:hidden"
             >
               {isProcessing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              {isProcessing ? "Bearbetar..." : "Exportera 1000x1000 PNG"}
-            </Button>
-          </aside>
-        </div>
-      </main>
+              {isProcessing ? "Bearbetar…" : "Exportera PNG"}
+            </button>
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }
@@ -870,37 +891,37 @@ function ImageStatusBadge({ state }: { state: ImageState }) {
   const isProcessing = ["normalizing", "segmenting", "cleaning"].includes(state.status)
 
   const stepLabel: Record<string, string> = {
-    normalizing: "Förbereder bild...",
-    segmenting: "AI klipper ut produkten...",
-    cleaning: "Rensar kanter...",
+    normalizing: "Förbereder…",
+    segmenting: "Klipper ut…",
+    cleaning: "Rensar kanter…",
   }
 
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-all duration-300",
-        isProcessing && "bg-accent/10 text-accent",
-        state.status === "done" && "bg-green-50 text-green-700",
-        state.status === "error" && "bg-orange-50 text-orange-700",
-        state.status === "idle" && "bg-secondary text-muted-foreground"
+        "mt-2 flex items-center gap-2 text-xs",
+        isProcessing && "text-[var(--bundla-orange-deep)]",
+        state.status === "done" && state.processed && "text-[var(--success)]",
+        state.status === "done" && !state.processed && "text-ink-muted",
+        state.status === "error" && "text-[var(--bundla-orange-deep)]"
       )}
     >
       {isProcessing && (
         <>
-          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
           <span>{stepLabel[state.status]}</span>
         </>
       )}
       {state.status === "done" && state.processed && (
         <>
-          <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
-          <span>Bakgrund borttagen</span>
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--success)]" />
+          <span>Friställd</span>
         </>
       )}
       {state.status === "done" && !state.processed && (
         <>
-          <span className="h-2 w-2 rounded-full bg-muted-foreground shrink-0" />
-          <span>Bild inladdad</span>
+          <span className="h-2 w-2 shrink-0 rounded-full bg-ink-ghost" />
+          <span>Inladdad</span>
         </>
       )}
       {state.status === "error" && (

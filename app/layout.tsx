@@ -1,31 +1,27 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
-
 export const metadata: Metadata = {
-  title: 'Bundla — Bundling-bilder för e-handel',
-  description: 'Skapa snygga bundling-produktbilder. Lägg två produkter sida vid sida med automatisk friläggning.',
-  generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://v0-product-image-combiner.vercel.app'),
+  title: {
+    default: 'Bundla — Två produktbilder. En färdig bundle.',
+    template: '%s · Bundla',
+  },
+  description:
+    'Bundla friställer två produktbilder automatiskt och slår ihop dem till en färdig bundle-bild för e-handel.',
+  applicationName: 'Bundla',
+  openGraph: {
+    type: 'website',
+    locale: 'sv_SE',
+    siteName: 'Bundla',
+    title: 'Bundla — Två produktbilder. En färdig bundle.',
+    description: 'Automatisk friläggning och bundling-bilder för e-handel.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Bundla — Två produktbilder. En färdig bundle.',
+    description: 'Automatisk friläggning och bundling-bilder för e-handel.',
   },
 }
 

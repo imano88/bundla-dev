@@ -1,9 +1,8 @@
 "use client"
 
 import { useRef, useState, useCallback } from "react"
-import { Upload, X, ImageIcon } from "lucide-react"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 
 interface ImageDropZoneProps {
   label: string
@@ -53,29 +52,11 @@ export function ImageDropZone({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">
-          Produkt {index + 1}
-        </span>
-        {image && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onRemove}
-            className="h-7 px-2 text-muted-foreground hover:text-destructive"
-            aria-label={`Ta bort bild ${index + 1}`}
-          >
-            <X className="h-3.5 w-3.5" />
-            <span className="ml-1 text-xs">Ta bort</span>
-          </Button>
-        )}
-      </div>
-
+    <div className="relative">
       <div
         role="button"
         tabIndex={0}
-        aria-label={`Ladda upp ${label}`}
+        aria-label={`Ladda upp produkt ${index + 1}`}
         onClick={() => inputRef.current?.click()}
         onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
         onDragOver={(e) => {
@@ -85,47 +66,51 @@ export function ImageDropZone({
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         className={cn(
-          "group relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-all duration-300 ease-out",
+          "group flex h-[170px] w-full cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-[14px] border-[1.5px] bg-white transition-all duration-200",
           isDragging
-            ? "scale-[1.01] border-accent bg-accent/5 shadow-lg shadow-accent/10"
+            ? "border-dashed border-[var(--bundla-orange)] bg-[var(--tint-orange)]/40"
             : image
-            ? "border-solid border-border bg-card shadow-sm"
-            : "border-border bg-secondary/40 hover:-translate-y-0.5 hover:border-accent/60 hover:bg-accent/5 hover:shadow-md"
+            ? "border-solid border-[var(--line-strong)]"
+            : "border-dashed border-[#cfc6b5] hover:border-[var(--bundla-orange)]/60 hover:bg-[var(--surface)]"
         )}
       >
         {image ? (
-          <img
-            src={image}
-            alt={label}
-            className="h-full w-full object-contain p-3 transition-transform duration-300"
-          />
+          <img src={image} alt={label} className="h-full w-full object-contain p-3" />
         ) : (
-          <div className="flex flex-col items-center gap-3 p-6 text-center">
-            <div
+          <>
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300",
-                isDragging
-                  ? "scale-110 bg-accent/15"
-                  : "bg-secondary group-hover:scale-105 group-hover:bg-accent/10"
+                "transition-colors",
+                isDragging ? "text-[var(--bundla-orange)]" : "text-[#bdb3a0] group-hover:text-[var(--bundla-orange)]"
               )}
+              aria-hidden="true"
             >
-              {isDragging ? (
-                <ImageIcon className="h-6 w-6 text-accent" />
-              ) : (
-                <Upload className="h-6 w-6 text-muted-foreground transition-colors group-hover:text-accent" />
-              )}
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                {isDragging ? "Släpp bilden här" : label}
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                PNG, WebP, JPG upp till 20 MB
-              </p>
-            </div>
-          </div>
+              <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />
+            </svg>
+            <span className="text-[13px] text-ink-muted">
+              {isDragging ? "Släpp här" : "Dra in bild"}
+            </span>
+          </>
         )}
       </div>
+
+      {image && (
+        <button
+          onClick={onRemove}
+          aria-label={`Ta bort produkt ${index + 1}`}
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-[var(--line-warm)] bg-white/90 text-ink-muted shadow-sm backdrop-blur-sm transition-colors hover:text-[var(--bundla-orange-deep)]"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
 
       <input
         ref={inputRef}

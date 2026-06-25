@@ -211,20 +211,9 @@ export function CompositorCanvas({
   }, [leftImage, rightImage, backgroundColor, transparent, padding, gap, showPlus, onCanvasReady])
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium tracking-tight text-foreground">Förhandsgranskning</span>
-        {hasContent && (
-          <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-            1000 × 1000
-          </span>
-        )}
-      </div>
+    <div className="flex min-h-[300px] flex-1 items-center justify-center rounded-[22px] border border-[var(--line-warm)] bg-white p-6 shadow-[var(--shadow-pop)] sm:p-8">
       <div
-        className={cn(
-          "relative w-full overflow-hidden rounded-xl border border-border/70 shadow-sm ring-1 ring-black/[0.03] transition-shadow",
-          "bg-[repeating-conic-gradient(#d1d5db_0%_25%,#f9fafb_0%_50%)] bg-[length:12px_12px]"
-        )}
+        className="checker relative w-full max-w-[560px] overflow-hidden rounded-2xl"
         style={{ aspectRatio: "1 / 1" }}
       >
         <canvas
@@ -235,8 +224,8 @@ export function CompositorCanvas({
         />
         {!hasContent && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-sm text-muted-foreground px-4 text-center">
-              Ladda upp bilder för att se förhandsgranskningen
+            <p className="px-4 text-center text-sm text-ink-muted">
+              Förhandsvisning av din bundle
             </p>
           </div>
         )}
