@@ -49,8 +49,10 @@ export function LandingPage() {
     <div className="min-h-screen bg-[var(--paper)] text-ink">
       {/* Nav */}
       <header className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-6 sm:px-10">
-        <Link href="/" className="flex items-center gap-2.5">
-          <Mark />
+        <Link href="/" className="group flex items-center gap-2.5">
+          <span className="inline-flex transition-transform duration-300 ease-out group-hover:rotate-[-6deg] group-hover:scale-110">
+            <Mark />
+          </span>
           <span className="font-display text-[23px] font-bold tracking-[-0.02em]">Bundla</span>
         </Link>
         <nav className="hidden items-center gap-8 text-[15px] font-medium text-ink-body md:flex">
