@@ -1,6 +1,24 @@
 import type { Metadata, Viewport } from 'next'
+import { Familjen_Grotesk, Bricolage_Grotesque, Space_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+
+const fontSans = Familjen_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-familjen',
+})
+const fontDisplay = Bricolage_Grotesque({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-bricolage',
+})
+const fontMono = Space_Mono({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  display: 'swap',
+  variable: '--font-space-mono',
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://bundla.vercel.app'),
@@ -35,12 +53,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="sv" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Familjen+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
+    <html
+      lang="sv"
+      className={`${fontSans.variable} ${fontDisplay.variable} ${fontMono.variable}`}
+      suppressHydrationWarning
+    >
       <body className="font-sans antialiased" suppressHydrationWarning>
         {children}
         <Analytics />
