@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { LoginForm } from "@/components/login-form"
 
-export const metadata = { title: "Logga in" }
+export const metadata = { title: "Logga in", robots: { index: false, follow: false } }
 
 export default function LoginPage() {
   return (

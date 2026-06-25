@@ -1,6 +1,10 @@
 import Link from "next/link"
 
-export const metadata = { title: "Integritetspolicy" }
+export const metadata = {
+  title: "Integritetspolicy",
+  description: "Så hanterar Bundla personuppgifter och bilder enligt GDPR.",
+  alternates: { canonical: "/integritetspolicy" },
+}
 
 export default function IntegritetspolicyPage() {
   return (

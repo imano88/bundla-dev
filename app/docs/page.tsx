@@ -1,6 +1,10 @@
 import Link from "next/link"
 
-export const metadata = { title: "Hjälp" }
+export const metadata = {
+  title: "Hjälp",
+  description: "Kom igång med Bundla: dra in två produktbilder, frilägg automatiskt och exportera en färdig bundle-bild.",
+  alternates: { canonical: "/docs" },
+}
 
 const STEPS = [
   ["Dra in två bilder", "Släpp en produktbild i vardera rutan under Källbilder. PNG, WebP eller JPG, upp till 20 MB per bild."],

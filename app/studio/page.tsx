@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { ProductCompositor } from "@/components/product-compositor-v2"
 import { NoAccess } from "@/components/no-access"
 
-export const metadata = { title: "Studio" }
+export const metadata = { title: "Studio", robots: { index: false, follow: false } }
 
 export default async function StudioPage() {
   const supabase = await createClient()

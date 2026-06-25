@@ -1,6 +1,10 @@
 import Link from "next/link"
 
-export const metadata = { title: "Användarvillkor" }
+export const metadata = {
+  title: "Användarvillkor",
+  description: "Användarvillkor för Bundla, verktyget för automatiska bundle-bilder till e-handel.",
+  alternates: { canonical: "/villkor" },
+}
 
 export default function VillkorPage() {
   return (
