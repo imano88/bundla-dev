@@ -54,7 +54,7 @@ function getContentBounds(
     }
   }
 
-  // No transparent pixels found — treat as full image (JPEG etc.)
+  // No transparent pixels found, treat as full image (JPEG etc.)
   if (!hasAlpha) {
     return { x: 0, y: 0, w: width, h: height }
   }

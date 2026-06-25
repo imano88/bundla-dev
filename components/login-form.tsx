@@ -41,7 +41,7 @@ export function LoginForm() {
   if (sent) {
     return (
       <div className="rounded-[14px] bg-[var(--tint-orange)] px-4 py-4 text-sm text-ink-body">
-        Kolla din mejl — vi har skickat en inloggningslänk till <strong>{email}</strong>. Öppna den på
+        Kolla din mejl. Vi har skickat en inloggningslänk till <strong>{email}</strong>. Öppna den på
         den här enheten för att logga in.
       </div>
     )

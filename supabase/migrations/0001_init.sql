@@ -1,4 +1,4 @@
--- Bundla — multi-tenant foundation
+-- Bundla: multi-tenant foundation
 -- Run this in the Supabase project "Bundla": SQL Editor → New query → paste → Run.
 -- Safe to re-run (idempotent where practical).
 

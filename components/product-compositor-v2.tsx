@@ -226,8 +226,8 @@ async function refineMatte(blob: Blob, originalSrc: string, rim = 2): Promise<Bl
 }
 
 // Removes small, disconnected specks the segmentation model sometimes leaves
-// behind (stray shadow/reflection fragments). The largest connected component
-// — the product itself — is always kept, and only islands smaller than
+// behind (stray shadow/reflection fragments). The largest connected component,
+// the product itself, is always kept, and only islands smaller than
 // `minFraction` of it are cleared, so genuine multi-part products survive.
 function removeSmallIslands(blob: Blob, minFraction = 0.02): Promise<Blob> {
   return new Promise((resolve) => {
@@ -383,7 +383,7 @@ export function ProductCompositor() {
     try {
       element = await loadImage(dataUrl)
     } catch {
-      // ignore — the slot just stays empty
+      // ignore; the slot just stays empty
     }
     setImages((prev) => {
       const next = [...prev] as [ImageState, ImageState]

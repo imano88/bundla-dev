@@ -31,7 +31,7 @@ const STEPS = [
   {
     n: "01",
     title: "Dra in två bilder",
-    body: "Släpp produktfoton rakt in i Studion — PNG, WebP eller JPG, upp till 20 MB styck.",
+    body: "Släpp produktfoton rakt in i Studion. PNG, WebP eller JPG, upp till 20 MB styck.",
   },
   {
     n: "02",
@@ -41,7 +41,7 @@ const STEPS = [
   {
     n: "03",
     title: "Exportera färdig PNG",
-    body: "Ladda ner en transparent eller färgsatt paketbild — redo att läggas upp direkt i butiken.",
+    body: "Ladda ner en transparent eller färgsatt paketbild, redo att läggas upp direkt i butiken.",
   },
 ]
 
@@ -95,7 +95,7 @@ export function LandingPage() {
           </h1>
           <p className="mt-5 max-w-[440px] text-[19px] leading-relaxed text-ink-body">
             Dra in två produktbilder. Bundla friställer dem automatiskt och sätter ihop dem till en
-            snygg paketbild — redo för butiken på sekunder.
+            snygg paketbild, redo för butiken på sekunder.
           </p>
           <div className="mt-8 flex flex-wrap gap-3.5">
             <Link
@@ -111,7 +111,7 @@ export function LandingPage() {
               Se hur det funkar
             </a>
           </div>
-          <p className="mt-5 text-sm text-ink-muted">Inga lager, ingen Photoshop — bara dra och släpp.</p>
+          <p className="mt-5 text-sm text-ink-muted">Inga lager, ingen Photoshop. Bara dra och släpp.</p>
         </div>
 
         {/* Preview card */}
@@ -176,7 +176,7 @@ export function LandingPage() {
             <Eyebrow>Så funkar det</Eyebrow>
             <h2 className="font-display text-[34px] font-bold leading-tight tracking-[-0.03em] sm:text-[40px]">
               Från två filer till färdig
-              <br className="hidden sm:block" /> paketbild — i tre steg
+              <br className="hidden sm:block" /> paketbild på tre steg
             </h2>
           </div>
           <p className="max-w-[300px] text-base leading-relaxed text-ink-body">
@@ -245,7 +245,7 @@ export function LandingPage() {
               <br /> produkter idag
             </h2>
             <p className="mt-4 text-[18px] leading-relaxed text-[#FFEAD8]">
-              Skapa snygga paketbilder på sekunder — utan Photoshop, utan krångel.
+              Skapa snygga paketbilder på sekunder, utan Photoshop, utan krångel.
             </p>
             <div className="mt-8 flex flex-wrap gap-3.5">
               <Link href="/studio" className="inline-flex items-center gap-2 rounded-[11px] bg-ink px-7 py-3.5 text-base font-semibold text-white transition-transform active:translate-y-px">
