@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { getSupabaseUrl } from "@/lib/supabase/url"
 
 // Refreshes the Supabase session and gates the Studio + the paid endpoint:
 // a valid session is required, otherwise redirect to /login (pages) or 401 (api).
@@ -8,7 +9,7 @@ export async function middleware(req: NextRequest) {
   let res = NextResponse.next({ request: req })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    getSupabaseUrl(),
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
