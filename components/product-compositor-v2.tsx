@@ -696,6 +696,7 @@ export function ProductCompositor() {
             gap={gap}
             showPlus={showPlus}
             showGrid={showGrid}
+            scanning={isProcessing}
             plusFrac={plusFrac}
             offsetL={offsetL}
             offsetR={offsetR}

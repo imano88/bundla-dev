@@ -196,4 +196,23 @@
   .animate-rise {
     animation: rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+
+  /* Friläggning scan beam: sweeps up and down over the preview while processing. */
+  @keyframes scan-sweep {
+    from {
+      top: -3%;
+    }
+    to {
+      top: 103%;
+    }
+  }
+  .scan-beam {
+    animation: scan-sweep 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scan-beam {
+      animation: none;
+      top: 50%;
+    }
+  }
 }

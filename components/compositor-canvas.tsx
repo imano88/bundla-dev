@@ -11,6 +11,7 @@ interface CompositorCanvasProps {
   gap: number
   showPlus: boolean
   showGrid: boolean
+  scanning: boolean
   plusFrac: number
   offsetL: number
   offsetR: number
@@ -19,6 +20,10 @@ interface CompositorCanvasProps {
   outputH: number
   onCanvasReady: (canvas: HTMLCanvasElement) => void
 }
+
+// Scanner laser colour (kept teal on purpose, like the source design).
+const SCAN = "#14b8a6"
+const scanRgba = (a: number) => `rgba(20, 184, 166, ${a})`
 
 // Thickness of the "+" bars relative to its size, and its colour.
 const PLUS_BAR_FRAC = 0.32
@@ -100,6 +105,7 @@ export function CompositorCanvas({
   gap,
   showPlus,
   showGrid,
+  scanning,
   plusFrac,
   offsetL,
   offsetR,
@@ -243,6 +249,47 @@ export function CompositorCanvas({
           className="h-full w-full"
           style={{ aspectRatio: `${outputW} / ${outputH}` }}
         />
+        {scanning && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            {/* scan grid */}
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `repeating-linear-gradient(0deg, ${scanRgba(
+                  0.1
+                )} 0 1px, transparent 1px 26px), repeating-linear-gradient(90deg, ${scanRgba(
+                  0.1
+                )} 0 1px, transparent 1px 26px)`,
+              }}
+            />
+            {/* focus reticle corners */}
+            <div className="absolute inset-3">
+              {[
+                "left-0 top-0 rounded-tl-[4px] border-l-2 border-t-2",
+                "right-0 top-0 rounded-tr-[4px] border-r-2 border-t-2",
+                "bottom-0 left-0 rounded-bl-[4px] border-b-2 border-l-2",
+                "bottom-0 right-0 rounded-br-[4px] border-b-2 border-r-2",
+              ].map((c) => (
+                <span key={c} className={`absolute h-5 w-5 ${c}`} style={{ borderColor: SCAN }} />
+              ))}
+            </div>
+            {/* sweeping laser beam */}
+            <div className="scan-beam absolute left-0 right-0">
+              <div
+                className="absolute bottom-0 left-0 right-0 h-[120px]"
+                style={{ background: `linear-gradient(to bottom, ${scanRgba(0)}, ${scanRgba(0.22)})` }}
+              />
+              <div
+                className="absolute left-0 right-0 top-0 h-[40px]"
+                style={{ background: `linear-gradient(to top, ${scanRgba(0)}, ${scanRgba(0.18)})` }}
+              />
+              <div
+                className="absolute left-0 right-0 top-0 h-[2px]"
+                style={{ background: SCAN, boxShadow: `0 0 10px ${SCAN}, 0 0 22px ${SCAN}` }}
+              />
+            </div>
+          </div>
+        )}
         {showGrid && (
           <div className="pointer-events-none absolute inset-0" aria-hidden="true">
             {/* The template's horizontal guide lines (e.g. Tretti's grid). */}
