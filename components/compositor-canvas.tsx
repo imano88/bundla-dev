@@ -128,8 +128,7 @@ export function CompositorCanvas({
 
     const availableH = Math.max(1, outputH - padding * 2)
     const availableW = Math.max(1, outputW - padding * 2)
-    // Baseline the products sit on, and the centre line for the "+".
-    const baseline = padding + availableH
+    // Vertical centre line of the content band (products and the "+" centre on it).
     const centerY = padding + availableH / 2
 
     if (leftImage && rightImage) {
@@ -151,8 +150,9 @@ export function CompositorCanvas({
       const drawWR = boundsR.w * scaleR
       const drawHR = boundsR.h * scaleR
 
-      // "+" fixed at the horizontal centre; products hug the centre gap and
-      // stand on the shared baseline (like Tretti's catalogue bundles).
+      // "+" fixed at the horizontal centre; products hug the centre gap and are
+      // centred vertically in the band. Tall products that fill the band still
+      // reach top and bottom; shorter products sit balanced (not bottom-heavy).
       const cx = outputW / 2
       const leftInnerEdge = cx - sepW / 2
       const rightInnerEdge = cx + sepW / 2
@@ -164,7 +164,7 @@ export function CompositorCanvas({
         boundsL.w,
         boundsL.h,
         leftInnerEdge - drawWL,
-        baseline - drawHL,
+        centerY - drawHL / 2,
         drawWL,
         drawHL
       )
@@ -175,7 +175,7 @@ export function CompositorCanvas({
         boundsR.w,
         boundsR.h,
         rightInnerEdge,
-        baseline - drawHR,
+        centerY - drawHR / 2,
         drawWR,
         drawHR
       )
@@ -196,7 +196,7 @@ export function CompositorCanvas({
         bounds.w,
         bounds.h,
         padding + (availableW - drawW) / 2,
-        baseline - drawH,
+        centerY - drawH / 2,
         drawW,
         drawH
       )
