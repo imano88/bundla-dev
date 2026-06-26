@@ -4,6 +4,7 @@ import {
   CONTACT_EMAIL,
   LINKEDIN_URL,
   COMPANY_NAME,
+  COMPANY_DESCRIPTION,
   COMPANY_ORG_NR,
   COMPANY_VAT,
 } from "@/lib/site"
@@ -65,7 +66,9 @@ export function MarketingFooter() {
               <Mark size={26} />
               <span className="font-display text-[18px] font-bold tracking-[-0.02em]">Bundla</span>
             </div>
-            <p className="text-sm text-ink-muted">En tjänst av {COMPANY_NAME}.</p>
+            <p className="text-[13px] leading-relaxed text-ink-body">
+              En tjänst av {COMPANY_NAME}, {COMPANY_DESCRIPTION}. Bundla är en av dem.
+            </p>
             <p className="text-[13px] leading-relaxed text-ink-ghost">
               {COMPANY_NAME} · Org.nr {COMPANY_ORG_NR}
               <br />

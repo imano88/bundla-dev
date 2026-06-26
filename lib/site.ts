@@ -4,13 +4,15 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://bundla.ver
   ""
 )
 export const SITE_NAME = "Bundla"
-export const SITE_TAGLINE = "Två produktbilder. En färdig bundle."
+export const SITE_TAGLINE = "Två bilder. En bundle."
 export const SITE_DESCRIPTION =
   "Bundla frilägger två produktbilder automatiskt och slår ihop dem till en färdig bundle-bild för e-handel. Ingen Photoshop, inga lager."
 export const CONTACT_EMAIL = "jakob.radback@markable.se"
 
 // Operating company (shown in the footer / legal pages).
 export const COMPANY_NAME = "Markable AB"
+export const COMPANY_DESCRIPTION =
+  "ett AI-bolag som levererar rådgivning, föreläsningar och skräddarsydda AI-lösningar"
 export const COMPANY_ORG_NR = "559476-3897"
 export const COMPANY_VAT = "SE559476389701"
 // TODO: confirm the exact LinkedIn company URL.

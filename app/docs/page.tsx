@@ -10,7 +10,7 @@ const STEPS = [
   ["Dra in två bilder", "Släpp en produktbild i vardera rutan under Källbilder. PNG, WebP eller JPG, upp till 20 MB per bild."],
   ["Frilägg & skapa bundle", "Klicka på knappen i Inställningar. Bundla klipper ut båda produkterna och slår ihop dem till en bundle."],
   ["Justera", "Slå på/av plustecknet, välj bakgrund (transparent eller färg) och finjustera inre marginal och mellanrum."],
-  ["Exportera", "Klicka Exportera PNG uppe till höger för att ladda ner en färdig 1000×1000-bild."],
+  ["Exportera", "Klicka Exportera PNG uppe till höger för att ladda ner en färdig bild i valt format."],
 ]
 
 export default function DocsPage() {

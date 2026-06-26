@@ -69,9 +69,9 @@ export function LandingPage() {
         <div>
           <Eyebrow>Byggd för e-handel</Eyebrow>
           <h1 className="font-display text-[38px] font-bold leading-[1.02] tracking-[-0.035em] sm:text-[48px] lg:text-[60px]">
-            Två produktbilder.
+            Två bilder.
             <br />
-            En färdig{" "}
+            En{" "}
             <span
               style={{
                 background: "var(--gradient-brand)",
@@ -85,8 +85,8 @@ export function LandingPage() {
             .
           </h1>
           <p className="mt-5 max-w-[440px] text-[17px] leading-relaxed text-ink-body sm:text-[19px]">
-            Dra in två produktbilder. Bundla frilägger dem automatiskt och sätter ihop dem till en
-            snygg paketbild, redo för butiken på sekunder.
+            Ladda upp två produkter. Bundla tar bort bakgrunden, sätter ihop dem och ger dig en
+            butiksklar paketbild på sekunder.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
             <Link

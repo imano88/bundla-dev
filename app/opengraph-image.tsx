@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og"
 
-export const alt = "Bundla: Två produktbilder. En färdig bundle."
+export const alt = "Bundla: Två bilder. En bundle."
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
@@ -55,15 +55,16 @@ export default function OpengraphImage() {
         <div
           style={{
             display: "flex",
-            fontSize: 78,
+            fontSize: 92,
             fontWeight: 800,
             color: "#1A1512",
             letterSpacing: "-0.03em",
             lineHeight: 1.05,
-            maxWidth: 880,
+            maxWidth: 900,
           }}
         >
-          Två produktbilder. En färdig bundle.
+          <span>Två bilder. En&nbsp;</span>
+          <span style={{ color: "#FF6A00" }}>bundle.</span>
         </div>
 
         <div style={{ display: "flex", marginTop: 26, fontSize: 30, color: "#5C554B" }}>

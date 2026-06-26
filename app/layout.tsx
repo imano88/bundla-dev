@@ -23,7 +23,7 @@ const fontMono = Space_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://bundla.vercel.app'),
   title: {
-    default: 'Bundla: Två produktbilder. En färdig bundle.',
+    default: 'Bundla: Två bilder. En bundle.',
     template: '%s · Bundla',
   },
   description:
@@ -33,12 +33,12 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'sv_SE',
     siteName: 'Bundla',
-    title: 'Bundla: Två produktbilder. En färdig bundle.',
+    title: 'Bundla: Två bilder. En bundle.',
     description: 'Automatisk friläggning och bundling-bilder för e-handel.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Bundla: Två produktbilder. En färdig bundle.',
+    title: 'Bundla: Två bilder. En bundle.',
     description: 'Automatisk friläggning och bundling-bilder för e-handel.',
   },
 }

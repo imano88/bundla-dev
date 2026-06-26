@@ -2,7 +2,7 @@
 
 > Bundla är ett webbverktyg som frilägger två produktbilder automatiskt och slår ihop dem till en färdig bundle-bild (paketbild) för e-handel. Ingen Photoshop, inga lager.
 
-Bundla riktar sig till e-handlare och byråer som behöver snygga paketbilder snabbt. Användaren drar in två produktbilder, bakgrunden tas bort automatiskt, produkterna placeras sida vid sida med ett gråtecken emellan, och resultatet exporteras som en transparent PNG i 1000×1000.
+Bundla riktar sig till e-handlare och byråer som behöver snygga paketbilder snabbt. Användaren drar in två produktbilder, bakgrunden tas bort automatiskt, produkterna placeras sida vid sida med ett grått plustecken emellan, och resultatet exporteras som en PNG i valt format (t.ex. 2000×1700 eller 1000×1000).
 
 ## Så fungerar det
 - Dra in två produktbilder (PNG, WebP eller JPG, upp till 20 MB styck).
@@ -12,7 +12,7 @@ Bundla riktar sig till e-handlare och byråer som behöver snygga paketbilder sn
 
 ## Vanliga frågor
 - Vilka filformat stöds? PNG, WebP och JPG, upp till 20 MB per bild.
-- Vad får jag ut? En färdig bundle-bild i 1000×1000, transparent eller med färgad bakgrund.
+- Vad får jag ut? En färdig bundle-bild i valt format (t.ex. 2000×1700 eller 1000×1000), transparent eller med färgad bakgrund.
 - Behöver jag Photoshop eller designkunskap? Nej. Bundla gör friläggning och layout automatiskt.
 - Är det gjort för e-handel? Ja, bilderna är redo att laddas upp direkt i webbutiken.
 

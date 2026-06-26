@@ -21,7 +21,7 @@ export type Solution = {
 const SHARED_STEPS = [
   { title: "Dra in två bilder", body: "Släpp en produktbild i vardera rutan. PNG, WebP eller JPG, upp till 20 MB per bild." },
   { title: "Friläggs automatiskt", body: "Bakgrunden tas bort och produkterna placeras med jämn marginal och mellanrum." },
-  { title: "Exportera färdig PNG", body: "Ladda ner en transparent eller färgsatt bundle-bild i 1000×1000, redo för butiken." },
+  { title: "Exportera färdig PNG", body: "Ladda ner en transparent eller färgsatt bundle-bild i valt format, redo för butiken." },
 ]
 
 export const SOLUTIONS: Solution[] = [
@@ -64,13 +64,13 @@ export const SOLUTIONS: Solution[] = [
     benefitsTitle: "Bättre paketbilder, mindre jobb",
     benefits: [
       { title: "Konsekvent layout", body: "Produkterna placeras alltid jämnt, med samma marginal och mellanrum." },
-      { title: "Färdig för butiken", body: "Exporten är 1000×1000 PNG, anpassad för produktytor i e-handel." },
+      { title: "Färdig för butiken", body: "Exporten är en PNG i butiksklart format, anpassad för produktytor i e-handel." },
       { title: "Skala upp", body: "Hela teamet kan skapa paketbilder från samma konto och kvot." },
     ],
     steps: SHARED_STEPS,
     faq: [
       { q: "Kan jag styra mellanrummet mellan produkterna?", a: "Ja, du justerar marginal och mellanrum, och kan slå på eller av plustecknet." },
-      { q: "Vilken storlek får paketbilden?", a: "Den exporteras som en 1000×1000 pixlar PNG." },
+      { q: "Vilken storlek får paketbilden?", a: "Du väljer format: Standard (2000×1700), Kvadrat (1000×1000) eller en egen storlek. Allt exporteras som PNG." },
     ],
     ctaTitle: "Skapa din första paketbild",
     ctaText: "Slå ihop två produkter till en färdig bundle på sekunder.",

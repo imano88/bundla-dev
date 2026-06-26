@@ -13,7 +13,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     q: "Vilken upplösning får den färdiga bilden?",
-    a: "Exporten är en 1000×1000 pixlar PNG, redo att laddas upp direkt i webbutiken.",
+    a: "Du väljer format: Standard (2000×1700), Kvadrat (1000×1000) eller en egen storlek. Bilden exporteras som PNG, redo för webbutiken.",
   },
   {
     q: "Kan jag välja bakgrund?",
