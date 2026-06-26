@@ -346,16 +346,18 @@ async function splitByFraction(blob: Blob, splitFraction: number): Promise<[stri
   return [crop(0, splitX), crop(splitX, W - splitX)]
 }
 
-type OutputFormat = { key: string; label: string; w: number; h: number; padding: number }
+type OutputFormat = { key: string; label: string; w: number; h: number; padding: number; gap: number }
 
-// Output presets. Each customer/template can have its own dimensions and a
-// sensible default inner margin. Tretti's catalogue bundles are 2000×1700;
-// its grid (measured from their template) puts the product band between 7.7%
-// and 92.3% of the height, i.e. a top/bottom margin of ~130px on 1700.
+// Output presets. Tretti's catalogue bundles are 2000×1700; measured from their
+// template grid: product band between 7.7% and 92.3% of height (top/bottom
+// margin ~130px), and the gap between the two products ≈ 17% of the width.
 const FORMATS: OutputFormat[] = [
-  { key: "square", label: "Kvadrat", w: 1000, h: 1000, padding: 30 },
-  { key: "tretti", label: "Tretti", w: 2000, h: 1700, padding: 130 },
+  { key: "square", label: "Kvadrat", w: 1000, h: 1000, padding: 30, gap: 170 },
+  { key: "tretti", label: "Tretti", w: 2000, h: 1700, padding: 130, gap: 340 },
 ]
+
+// "+" size as a fraction of canvas height. Tretti's measured ≈ 0.10.
+const DEFAULT_PLUS_FRAC = 0.1
 
 export function ProductCompositor() {
   const [images, setImages] = useState<[ImageState, ImageState]>([
@@ -367,14 +369,16 @@ export function ProductCompositor() {
   const [transparentBg, setTransparentBg] = useState(true)
   const [format, setFormat] = useState<OutputFormat>(FORMATS[0])
   const [padding, setPadding] = useState(FORMATS[0].padding)
-  const [gap, setGap] = useState(20)
+  const [gap, setGap] = useState(FORMATS[0].gap)
   const [showPlus, setShowPlus] = useState(true)
   const [showGrid, setShowGrid] = useState(false)
+  const [plusFrac, setPlusFrac] = useState(DEFAULT_PLUS_FRAC)
 
-  // Switching format also resets the inner margin to that format's default.
+  // Switching format resets the inner margin and gap to that format's defaults.
   const selectFormat = (f: OutputFormat) => {
     setFormat(f)
     setPadding(f.padding)
+    setGap(f.gap)
   }
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [usage, setUsage] = useState<{ used: number; quota: number; isAdmin?: boolean } | null>(null)
@@ -664,6 +668,7 @@ export function ProductCompositor() {
             gap={gap}
             showPlus={showPlus}
             showGrid={showGrid}
+            plusFrac={plusFrac}
             outputW={format.w}
             outputH={format.h}
             onCanvasReady={handleCanvasReady}
@@ -821,18 +826,36 @@ export function ProductCompositor() {
             </div>
 
             {/* Mellanrum */}
-            <div className="py-5">
+            <div className="border-b border-[var(--line-soft)] py-5">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-[13px] font-semibold">Mellanrum</span>
                 <span className="font-mono text-xs text-[var(--bundla-orange)]">{gap}px</span>
               </div>
               <Slider
                 min={0}
-                max={200}
+                max={600}
                 step={10}
                 value={[gap]}
                 onValueChange={([v]) => setGap(v)}
                 aria-label="Mellanrum mellan produkter"
+              />
+            </div>
+
+            {/* Plusstorlek */}
+            <div className="py-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[13px] font-semibold">Plusstorlek</span>
+                <span className="font-mono text-xs text-[var(--bundla-orange)]">
+                  {Math.round(plusFrac * 100)}%
+                </span>
+              </div>
+              <Slider
+                min={4}
+                max={16}
+                step={1}
+                value={[Math.round(plusFrac * 100)]}
+                onValueChange={([v]) => setPlusFrac(v / 100)}
+                aria-label="Plusstorlek"
               />
             </div>
 

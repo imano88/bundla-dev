@@ -11,13 +11,13 @@ interface CompositorCanvasProps {
   gap: number
   showPlus: boolean
   showGrid: boolean
+  plusFrac: number
   outputW: number
   outputH: number
   onCanvasReady: (canvas: HTMLCanvasElement) => void
 }
 
-// Size of the "+" separator relative to the canvas height, and bar thickness.
-const PLUS_SIZE_FRAC = 0.12
+// Thickness of the "+" bars relative to its size, and its colour.
 const PLUS_BAR_FRAC = 0.32
 const PLUS_COLOR = "#9e9e9e"
 
@@ -97,6 +97,7 @@ export function CompositorCanvas({
   gap,
   showPlus,
   showGrid,
+  plusFrac,
   outputW,
   outputH,
   onCanvasReady,
@@ -137,9 +138,10 @@ export function CompositorCanvas({
       const boundsL = getContentBounds(leftImage)
       const boundsR = getContentBounds(rightImage)
 
-      // Reserve a centred zone for the "+" (with breathing room either side).
-      const plusSize = showPlus ? outputH * PLUS_SIZE_FRAC : 0
-      const sepW = showPlus ? plusSize + gap * 2 : gap
+      // `gap` is the actual distance between the two products' inner edges; the
+      // "+" is drawn centred inside it (sized independently, never wider than gap).
+      const sepW = gap
+      const plusSize = showPlus ? Math.min(outputH * plusFrac, gap) : 0
 
       // Each product fits within its own half (width capped at halfW, height at
       // availableH), preserving aspect. This keeps real proportions: a flat hob
@@ -213,6 +215,7 @@ export function CompositorCanvas({
     padding,
     gap,
     showPlus,
+    plusFrac,
     outputW,
     outputH,
     onCanvasReady,
