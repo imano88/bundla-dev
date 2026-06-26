@@ -232,9 +232,9 @@ export function CompositorCanvas({
   ])
 
   return (
-    <div className="flex min-h-[300px] flex-1 items-center justify-center rounded-[22px] border border-[var(--line-warm)] bg-white p-6 shadow-[var(--shadow-pop)] sm:p-8">
+    <div className="flex justify-center rounded-[22px] border border-[var(--line-warm)] bg-white p-4 shadow-[var(--shadow-pop)] sm:p-5">
       <div
-        className="checker relative w-full max-w-[600px] overflow-hidden rounded-2xl"
+        className="checker relative w-full max-w-[680px] overflow-hidden rounded-2xl"
         style={{ aspectRatio: `${outputW} / ${outputH}` }}
       >
         <canvas

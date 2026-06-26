@@ -665,8 +665,8 @@ export function ProductCompositor() {
         </aside>
 
         {/* Förhandsvisning */}
-        <main className="animate-rise flex min-w-0 flex-col p-6 [animation-delay:80ms] sm:p-8">
-          <div className="mb-4 flex items-center justify-between gap-3">
+        <main className="animate-rise flex min-w-0 flex-col p-4 [animation-delay:80ms] sm:p-6 lg:overflow-y-auto">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-ghost">
               Förhandsvisning
             </div>
@@ -705,7 +705,7 @@ export function ProductCompositor() {
             onCanvasReady={handleCanvasReady}
           />
 
-          <p className="mt-4 text-center text-xs text-ink-ghost">
+          <p className="mt-3 text-center text-xs text-ink-ghost">
             {hasAnyImage
               ? `Färdig bundle · ${outW} × ${outH} px`
               : "Dra in två bilder till vänster för att börja"}
