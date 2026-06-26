@@ -179,18 +179,18 @@ export function TeamPanel({
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {m.confirmed ? (
-                  <span className="rounded-full bg-[#e8f6ef] px-2.5 py-1 text-[11px] font-semibold text-[#1c8a5b]">
+                  <span className="inline-flex min-w-[74px] items-center justify-center rounded-full bg-[#e8f6ef] px-2.5 py-1 text-[11px] font-semibold text-[#1c8a5b]">
                     Aktiv
                   </span>
                 ) : (
                   <span
                     title="Har inte loggat in / verifierat sitt konto än"
-                    className="rounded-full bg-[var(--tint-orange)] px-2.5 py-1 text-[11px] font-semibold text-[var(--bundla-orange-deep)]"
+                    className="inline-flex min-w-[74px] items-center justify-center rounded-full bg-[var(--tint-orange)] px-2.5 py-1 text-[11px] font-semibold text-[var(--bundla-orange-deep)]"
                   >
                     Inbjuden
                   </span>
                 )}
-                {m.id !== meId && (
+                {m.id !== meId ? (
                   <button
                     onClick={() => remove(m.id)}
                     aria-label={`Ta bort ${m.email}`}
@@ -198,6 +198,8 @@ export function TeamPanel({
                   >
                     <X className="h-4 w-4" />
                   </button>
+                ) : (
+                  <span className="h-8 w-8" aria-hidden="true" />
                 )}
               </div>
             </div>

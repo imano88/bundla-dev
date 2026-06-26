@@ -1,9 +1,25 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import { LoginForm } from "@/components/login-form"
 
 export const metadata = { title: "Logga in", robots: { index: false, follow: false } }
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>
+}) {
+  // Already signed in? Skip the form and go straight to the app.
+  const { next } = await searchParams
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user) {
+    redirect(next && next.startsWith("/") ? next : "/studio")
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[var(--paper)] px-6">
       <div className="w-full max-w-[360px]">
