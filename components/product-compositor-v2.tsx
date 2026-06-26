@@ -369,6 +369,7 @@ export function ProductCompositor() {
   const [padding, setPadding] = useState(FORMATS[0].padding)
   const [gap, setGap] = useState(20)
   const [showPlus, setShowPlus] = useState(true)
+  const [showGrid, setShowGrid] = useState(false)
 
   // Switching format also resets the inner margin to that format's default.
   const selectFormat = (f: OutputFormat) => {
@@ -662,6 +663,7 @@ export function ProductCompositor() {
             padding={padding}
             gap={gap}
             showPlus={showPlus}
+            showGrid={showGrid}
             outputW={format.w}
             outputH={format.h}
             onCanvasReady={handleCanvasReady}
@@ -708,6 +710,21 @@ export function ProductCompositor() {
                 checked={showPlus}
                 onCheckedChange={setShowPlus}
                 aria-label="Visa plustecken mellan produkterna"
+              />
+            </div>
+
+            {/* Rutnät */}
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--line-soft)] py-5">
+              <div>
+                <div className="text-sm font-semibold">Visa rutnät</div>
+                <p className="mt-0.5 text-xs text-ink-muted">
+                  Hjälplinjer i förhandsvisningen (syns inte i exporten)
+                </p>
+              </div>
+              <Switch
+                checked={showGrid}
+                onCheckedChange={setShowGrid}
+                aria-label="Visa rutnät i förhandsvisningen"
               />
             </div>
 

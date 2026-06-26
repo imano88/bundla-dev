@@ -10,6 +10,7 @@ interface CompositorCanvasProps {
   padding: number
   gap: number
   showPlus: boolean
+  showGrid: boolean
   outputW: number
   outputH: number
   onCanvasReady: (canvas: HTMLCanvasElement) => void
@@ -95,6 +96,7 @@ export function CompositorCanvas({
   padding,
   gap,
   showPlus,
+  showGrid,
   outputW,
   outputH,
   onCanvasReady,
@@ -228,6 +230,22 @@ export function CompositorCanvas({
           className="h-full w-full"
           style={{ aspectRatio: `${outputW} / ${outputH}` }}
         />
+        {showGrid && (
+          <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            {/* Content band (top & bottom margin from the inner-margin setting) */}
+            <div
+              className="absolute left-0 right-0 border-t border-dashed border-[var(--bundla-orange)]/60"
+              style={{ top: `${(padding / outputH) * 100}%` }}
+            />
+            <div
+              className="absolute left-0 right-0 border-t border-dashed border-[var(--bundla-orange)]/60"
+              style={{ top: `${((outputH - padding) / outputH) * 100}%` }}
+            />
+            {/* Centre cross */}
+            <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-[var(--bundla-orange)]/30" />
+            <div className="absolute bottom-0 left-1/2 top-0 border-l border-dashed border-[var(--bundla-orange)]/30" />
+          </div>
+        )}
         {!hasContent && (
           <div className="absolute inset-0 flex items-center justify-center">
             <p className="px-4 text-center text-sm text-ink-muted">Förhandsvisning av din bundle</p>
