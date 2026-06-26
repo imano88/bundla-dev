@@ -4,21 +4,7 @@ import { FAQ } from "@/lib/faq"
 import { SOLUTIONS } from "@/lib/landing-pages"
 import { MobileMenu } from "@/components/mobile-menu"
 import { MarketingFooter } from "@/components/marketing-chrome"
-
-function Mark({ size = 34 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 60 60" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="lmark" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#FF8A2B" />
-          <stop offset="1" stopColor="#FFB05C" />
-        </linearGradient>
-      </defs>
-      <rect x="6" y="6" width="33" height="33" rx="10" fill="url(#lmark)" />
-      <rect x="21" y="21" width="33" height="33" rx="10" fill="#FF6A00" />
-    </svg>
-  )
-}
+import { AnimatedLogoMark } from "@/components/animated-logo"
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
@@ -55,9 +41,7 @@ export function LandingPage() {
       {/* Nav */}
       <header className="relative mx-auto flex max-w-[1200px] items-center justify-between px-6 py-6 sm:px-10">
         <Link href="/" className="group flex items-center gap-2.5">
-          <span className="inline-flex transition-transform duration-300 ease-out group-hover:rotate-[-6deg] group-hover:scale-110">
-            <Mark />
-          </span>
+          <AnimatedLogoMark size={34} />
           <span className="font-display text-[23px] font-bold tracking-[-0.02em]">Bundla</span>
         </Link>
         <nav className="hidden items-center gap-8 text-[15px] font-medium text-ink-body md:flex">

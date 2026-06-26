@@ -156,6 +156,30 @@
   .checker {
     background: repeating-conic-gradient(#e9ebee 0% 25%, #f7f8f9 0% 50%) 50% / 26px 26px;
   }
+
+  /* Logomark hover animation (from the design handoff): the two squares slide
+     together and the mark scales up slightly, with a springy ease. */
+  .logo-anim,
+  .logo-anim-a,
+  .logo-anim-b {
+    transition: transform 0.55s cubic-bezier(0.34, 1.45, 0.5, 1);
+  }
+  .group:hover .logo-anim {
+    transform: scale(1.05);
+  }
+  .group:hover .logo-anim-a {
+    transform: translate(var(--mv), var(--mv));
+  }
+  .group:hover .logo-anim-b {
+    transform: translate(calc(var(--mv) * -1), calc(var(--mv) * -1));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .logo-anim,
+    .logo-anim-a,
+    .logo-anim-b {
+      transition: none;
+    }
+  }
 }
 
 @layer utilities {

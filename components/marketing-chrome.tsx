@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { AnimatedLogoMark } from "@/components/animated-logo"
 import {
   CONTACT_EMAIL,
   LINKEDIN_URL,
@@ -25,8 +26,8 @@ function Mark({ size = 30 }: { size?: number }) {
 export function MarketingHeader() {
   return (
     <header className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-6 sm:px-10">
-      <Link href="/" className="flex items-center gap-2.5">
-        <Mark />
+      <Link href="/" className="group flex items-center gap-2.5">
+        <AnimatedLogoMark size={30} />
         <span className="font-display text-[23px] font-bold tracking-[-0.02em]">Bundla</span>
       </Link>
       <div className="flex items-center gap-4">
