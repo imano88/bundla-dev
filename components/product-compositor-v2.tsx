@@ -348,12 +348,12 @@ async function splitByFraction(blob: Blob, splitFraction: number): Promise<[stri
 
 type OutputFormat = { key: string; label: string; w: number; h: number; padding: number; gap: number }
 
-// Output presets. Tretti's catalogue bundles are 2000×1700; measured from their
-// template grid: product band between 7.7% and 92.3% of height (top/bottom
-// margin ~130px), and the gap between the two products ≈ 17% of the width.
+// Output presets. The default "Standard" (2000×1700) matches the catalogue grid
+// measured from Tretti's template: product band between 7.7% and 92.3% of height
+// (top/bottom margin ~130px), and a gap between the products ≈ 17% of the width.
 const FORMATS: OutputFormat[] = [
+  { key: "standard", label: "Standard", w: 2000, h: 1700, padding: 130, gap: 340 },
   { key: "square", label: "Kvadrat", w: 1000, h: 1000, padding: 30, gap: 170 },
-  { key: "tretti", label: "Tretti", w: 2000, h: 1700, padding: 130, gap: 340 },
 ]
 
 // "+" size as a fraction of canvas height. Tretti's measured ≈ 0.10.
