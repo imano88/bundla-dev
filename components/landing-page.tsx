@@ -3,6 +3,7 @@ import Image from "next/image"
 import { FAQ } from "@/lib/faq"
 import { SOLUTIONS } from "@/lib/landing-pages"
 import { MobileMenu } from "@/components/mobile-menu"
+import { MarketingFooter } from "@/components/marketing-chrome"
 
 function Mark({ size = 34 }: { size?: number }) {
   return (
@@ -329,22 +330,7 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[var(--line-warm)]">
-        <div className="mx-auto flex max-w-[1200px] flex-col items-start gap-6 px-6 py-9 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-10">
-          <div className="flex items-center gap-2.5">
-            <Mark size={26} />
-            <span className="font-display text-[18px] font-bold tracking-[-0.02em]">Bundla</span>
-          </div>
-          <div className="order-last text-sm text-ink-muted sm:order-none">© 2026 Bundla · Bundling-bilder för e-handel</div>
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-ink-body">
-            <Link href="/losningar" className="transition-colors hover:text-ink">Lösningar</Link>
-            <Link href="/docs" className="transition-colors hover:text-ink">Hjälp</Link>
-            <Link href="/integritetspolicy" className="transition-colors hover:text-ink">Integritet</Link>
-            <Link href="/villkor" className="transition-colors hover:text-ink">Villkor</Link>
-            <a href="mailto:jakob.radback@markable.se" className="transition-colors hover:text-ink">Kontakt</a>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   )
 }
