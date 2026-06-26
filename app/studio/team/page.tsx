@@ -34,16 +34,20 @@ export default async function TeamPage() {
       .maybeSingle(),
   ])
 
-  // Verification status lives in auth.users (email_confirmed_at), not in
-  // profiles, so look it up with the admin client. Invited users who have not
-  // logged in yet have no confirmation timestamp.
+  // Account status lives in auth.users, not in profiles, so look it up with the
+  // admin client. Someone counts as active once they have actually signed in
+  // (last_sign_in_at), or had their email confirmed. Invited users who have not
+  // logged in yet have neither.
   const memberList = members ?? []
   const admin = createAdminClient()
   const statuses = await Promise.all(
     memberList.map((m) =>
       admin.auth.admin
         .getUserById(m.id)
-        .then((r) => ({ id: m.id, confirmed: Boolean(r.data.user?.email_confirmed_at) }))
+        .then((r) => ({
+          id: m.id,
+          confirmed: Boolean(r.data.user?.last_sign_in_at || r.data.user?.email_confirmed_at),
+        }))
         .catch(() => ({ id: m.id, confirmed: false }))
     )
   )
