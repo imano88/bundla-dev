@@ -26,6 +26,9 @@ export function TeamPanel({
   const [inviting, setInviting] = useState(false)
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null)
 
+  const remaining = Math.max(0, quota - used)
+  const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0
+
   const invite = async (e: React.FormEvent) => {
     e.preventDefault()
     setInviting(true)
@@ -76,11 +79,33 @@ export function TeamPanel({
           Tillbaka till Studio
         </Link>
 
-        <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
+        <div className="mt-6">
           <h1 className="font-display text-[32px] font-bold tracking-[-0.03em]">Team</h1>
-          <span className="font-mono text-xs text-ink-muted">
-            {orgName} · {used} / {quota} denna månad
-          </span>
+          <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-ghost">{orgName}</p>
+        </div>
+
+        {/* Genereringar (krediter) */}
+        <div className="mt-6 rounded-[22px] border border-[var(--line-soft)] bg-white p-6 shadow-[var(--shadow-card)]">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-ghost">
+                Genereringar denna månad
+              </div>
+              <div className="mt-1 font-display text-[30px] font-bold tracking-[-0.02em]">
+                {used} <span className="text-[18px] font-medium text-ink-muted">/ {quota}</span>
+              </div>
+            </div>
+            <div className="text-sm font-medium text-ink-muted">{remaining} kvar</div>
+          </div>
+          <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-[var(--surface-sunken)]">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${pct}%`, background: "var(--gradient-brand)" }}
+            />
+          </div>
+          <p className="mt-3 text-xs text-ink-muted">
+            Kvoten delas av hela teamet och återställs den 1:a varje månad.
+          </p>
         </div>
 
         {/* Invite */}
@@ -130,7 +155,16 @@ export function TeamPanel({
         </div>
 
         {/* Members */}
-        <div className="mt-6 rounded-[22px] border border-[var(--line-soft)] bg-white p-2 shadow-[var(--shadow-card)]">
+        <div className="mb-3 mt-8 flex items-baseline justify-between">
+          <h2 className="font-display text-lg font-semibold tracking-[-0.02em]">Medlemmar</h2>
+          <span className="font-mono text-xs text-ink-muted">
+            {members.length} {members.length === 1 ? "person" : "personer"}
+          </span>
+        </div>
+        <p className="mb-3 text-xs text-ink-muted">
+          Alla medlemmar delar teamets gemensamma kvot ovan. Antalet medlemmar är inte begränsat.
+        </p>
+        <div className="rounded-[22px] border border-[var(--line-soft)] bg-white p-2 shadow-[var(--shadow-card)]">
           {members.map((m) => (
             <div
               key={m.id}
