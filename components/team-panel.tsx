@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Loader2, ArrowLeft, X } from "lucide-react"
 
-type Member = { id: string; email: string; role: string }
+type Member = { id: string; email: string; role: string; confirmed: boolean }
 
 export function TeamPanel({
   orgName,
@@ -177,15 +177,29 @@ export function TeamPanel({
                   {m.id === meId ? " · du" : ""}
                 </div>
               </div>
-              {m.id !== meId && (
-                <button
-                  onClick={() => remove(m.id)}
-                  aria-label={`Ta bort ${m.email}`}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-[var(--tint-orange)] hover:text-[var(--bundla-orange-deep)]"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <div className="flex shrink-0 items-center gap-2">
+                {m.confirmed ? (
+                  <span className="rounded-full bg-[#e8f6ef] px-2.5 py-1 text-[11px] font-semibold text-[#1c8a5b]">
+                    Aktiv
+                  </span>
+                ) : (
+                  <span
+                    title="Har inte loggat in / verifierat sitt konto än"
+                    className="rounded-full bg-[var(--tint-orange)] px-2.5 py-1 text-[11px] font-semibold text-[var(--bundla-orange-deep)]"
+                  >
+                    Inbjuden
+                  </span>
+                )}
+                {m.id !== meId && (
+                  <button
+                    onClick={() => remove(m.id)}
+                    aria-label={`Ta bort ${m.email}`}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-[var(--tint-orange)] hover:text-[var(--bundla-orange-deep)]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

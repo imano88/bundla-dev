@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { TeamPanel } from "@/components/team-panel"
 
 export const metadata = { title: "Team", robots: { index: false, follow: false } }
@@ -33,16 +34,32 @@ export default async function TeamPage() {
       .maybeSingle(),
   ])
 
+  // Verification status lives in auth.users (email_confirmed_at), not in
+  // profiles, so look it up with the admin client. Invited users who have not
+  // logged in yet have no confirmation timestamp.
+  const memberList = members ?? []
+  const admin = createAdminClient()
+  const statuses = await Promise.all(
+    memberList.map((m) =>
+      admin.auth.admin
+        .getUserById(m.id)
+        .then((r) => ({ id: m.id, confirmed: Boolean(r.data.user?.email_confirmed_at) }))
+        .catch(() => ({ id: m.id, confirmed: false }))
+    )
+  )
+  const confirmedById = new Map(statuses.map((s) => [s.id, s.confirmed]))
+
   return (
     <TeamPanel
       orgName={org?.name ?? "Din organisation"}
       quota={org?.monthly_quota ?? 0}
       used={counter?.used ?? 0}
       meId={user.id}
-      members={(members ?? []).map((m) => ({
+      members={memberList.map((m) => ({
         id: m.id,
         email: m.email ?? "",
         role: m.role as string,
+        confirmed: confirmedById.get(m.id) ?? false,
       }))}
     />
   )
