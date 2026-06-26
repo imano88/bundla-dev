@@ -128,19 +128,19 @@ export function LandingPage() {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex flex-row gap-3 sm:flex-col">
-              <div className="checker flex h-[104px] w-full items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea] sm:w-[110px]">
+              <div className="flex h-[104px] w-full items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea] bg-white sm:w-[110px]">
                 <Image
                   src="/images/preview-tvattmaskin.png"
-                  alt="Tvättmaskin, frilagd"
+                  alt="Tvättmaskin, produktbild"
                   width={110}
                   height={104}
                   className="h-full w-full object-contain p-1.5"
                 />
               </div>
-              <div className="checker flex h-[104px] w-full items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea] sm:w-[110px]">
+              <div className="flex h-[104px] w-full items-center justify-center overflow-hidden rounded-[14px] border border-[#eceaea] bg-white sm:w-[110px]">
                 <Image
                   src="/images/preview-torktumlare.png"
-                  alt="Torktumlare, frilagd"
+                  alt="Torktumlare, produktbild"
                   width={110}
                   height={104}
                   className="h-full w-full object-contain p-1.5"
