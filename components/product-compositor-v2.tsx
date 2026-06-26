@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
-import { Download, Loader2, Info, AlertCircle, Wand2 } from "lucide-react"
+import { Download, Loader2, Info, AlertCircle, Wand2, RotateCcw } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ImageDropZone } from "@/components/image-drop-zone"
@@ -346,14 +346,23 @@ async function splitByFraction(blob: Blob, splitFraction: number): Promise<[stri
   return [crop(0, splitX), crop(splitX, W - splitX)]
 }
 
-type OutputFormat = { key: string; label: string; w: number; h: number; padding: number; gap: number }
+type OutputFormat = {
+  key: string
+  label: string
+  w: number
+  h: number
+  padding: number
+  gap: number
+  gridLines: number[]
+}
 
 // Output presets. The default "Standard" (2000×1700) matches the catalogue grid
-// measured from Tretti's template: product band between 7.7% and 92.3% of height
-// (top/bottom margin ~130px), and a gap between the products ≈ 17% of the width.
+// measured from Tretti's template: guide lines at 7.7/17.4/82.4/92.3% of height,
+// product band 7.7–92.3% (margin ~130px), gap between products ≈ 17% of width.
 const FORMATS: OutputFormat[] = [
-  { key: "standard", label: "Standard", w: 2000, h: 1700, padding: 130, gap: 340 },
-  { key: "square", label: "Kvadrat", w: 1000, h: 1000, padding: 30, gap: 170 },
+  { key: "standard", label: "Standard", w: 2000, h: 1700, padding: 130, gap: 340, gridLines: [0.077, 0.174, 0.824, 0.923] },
+  { key: "square", label: "Kvadrat", w: 1000, h: 1000, padding: 30, gap: 170, gridLines: [0.06, 0.94] },
+  { key: "custom", label: "Custom", w: 1500, h: 1500, padding: 100, gap: 250, gridLines: [0.06, 0.94] },
 ]
 
 // "+" size as a fraction of canvas height. Tretti's measured ≈ 0.10.
@@ -373,12 +382,31 @@ export function ProductCompositor() {
   const [showPlus, setShowPlus] = useState(true)
   const [showGrid, setShowGrid] = useState(false)
   const [plusFrac, setPlusFrac] = useState(DEFAULT_PLUS_FRAC)
+  const [offsetL, setOffsetL] = useState(0)
+  const [offsetR, setOffsetR] = useState(0)
+  const [customW, setCustomW] = useState(1500)
+  const [customH, setCustomH] = useState(1500)
 
-  // Switching format resets the inner margin and gap to that format's defaults.
+  const isCustom = format.key === "custom"
+  const outW = isCustom ? Math.min(5000, Math.max(200, customW || 0)) : format.w
+  const outH = isCustom ? Math.min(5000, Math.max(200, customH || 0)) : format.h
+
+  // Switching format resets margin/gap/offsets to that format's defaults.
   const selectFormat = (f: OutputFormat) => {
     setFormat(f)
     setPadding(f.padding)
     setGap(f.gap)
+    setOffsetL(0)
+    setOffsetR(0)
+  }
+
+  // Reset the adjustment sliders to the current format's defaults.
+  const resetSettings = () => {
+    setPadding(format.padding)
+    setGap(format.gap)
+    setPlusFrac(DEFAULT_PLUS_FRAC)
+    setOffsetL(0)
+    setOffsetR(0)
   }
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [usage, setUsage] = useState<{ used: number; quota: number; isAdmin?: boolean } | null>(null)
@@ -669,14 +697,17 @@ export function ProductCompositor() {
             showPlus={showPlus}
             showGrid={showGrid}
             plusFrac={plusFrac}
-            outputW={format.w}
-            outputH={format.h}
+            offsetL={offsetL}
+            offsetR={offsetR}
+            gridLines={format.gridLines}
+            outputW={outW}
+            outputH={outH}
             onCanvasReady={handleCanvasReady}
           />
 
           <p className="mt-4 text-center text-xs text-ink-ghost">
             {hasAnyImage
-              ? `Färdig bundle · ${format.w} × ${format.h} px`
+              ? `Färdig bundle · ${outW} × ${outH} px`
               : "Dra in två bilder till vänster för att börja"}
           </p>
         </main>
@@ -736,12 +767,12 @@ export function ProductCompositor() {
             {/* Format */}
             <div className="border-b border-[var(--line-soft)] py-5">
               <div className="mb-3 text-[13px] font-semibold">Format</div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {FORMATS.map((f) => (
                   <button
                     key={f.key}
                     onClick={() => selectFormat(f)}
-                    aria-label={`Format: ${f.label} ${f.w}×${f.h}`}
+                    aria-label={`Format: ${f.label}`}
                     className={cn(
                       "rounded-lg px-3 py-2.5 text-left transition-all",
                       format.key === f.key
@@ -750,12 +781,40 @@ export function ProductCompositor() {
                     )}
                   >
                     <div className="text-[13px] font-medium text-ink-body">{f.label}</div>
-                    <div className="font-mono text-[11px] text-ink-ghost">
-                      {f.w}×{f.h}
+                    <div className="font-mono text-[10px] text-ink-ghost">
+                      {f.key === "custom" ? `${customW}×${customH}` : `${f.w}×${f.h}`}
                     </div>
                   </button>
                 ))}
               </div>
+              {isCustom && (
+                <div className="mt-3 flex items-end gap-2">
+                  <label className="flex-1 text-xs text-ink-muted">
+                    Bredd
+                    <input
+                      type="number"
+                      min={200}
+                      max={5000}
+                      value={customW}
+                      onChange={(e) => setCustomW(Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-[var(--line-warm)] bg-white px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-[var(--bundla-orange)]"
+                    />
+                  </label>
+                  <span className="pb-2 text-ink-ghost">×</span>
+                  <label className="flex-1 text-xs text-ink-muted">
+                    Höjd
+                    <input
+                      type="number"
+                      min={200}
+                      max={5000}
+                      value={customH}
+                      onChange={(e) => setCustomH(Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-[var(--line-warm)] bg-white px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-[var(--bundla-orange)]"
+                    />
+                  </label>
+                  <span className="pb-2 text-xs text-ink-muted">px</span>
+                </div>
+              )}
             </div>
 
             {/* Bakgrundsfärg */}
@@ -842,7 +901,7 @@ export function ProductCompositor() {
             </div>
 
             {/* Plusstorlek */}
-            <div className="py-5">
+            <div className="border-b border-[var(--line-soft)] py-5">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-[13px] font-semibold">Plusstorlek</span>
                 <span className="font-mono text-xs text-[var(--bundla-orange)]">
@@ -857,6 +916,54 @@ export function ProductCompositor() {
                 onValueChange={([v]) => setPlusFrac(v / 100)}
                 aria-label="Plusstorlek"
               />
+            </div>
+
+            {/* Höjd per produkt */}
+            <div className="border-b border-[var(--line-soft)] py-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[13px] font-semibold">Vänster produkt · höjd</span>
+                <span className="font-mono text-xs text-[var(--bundla-orange)]">
+                  {offsetL > 0 ? "+" : ""}
+                  {offsetL}px
+                </span>
+              </div>
+              <Slider
+                min={-600}
+                max={600}
+                step={10}
+                value={[offsetL]}
+                onValueChange={([v]) => setOffsetL(v)}
+                aria-label="Vänster produkt höjd"
+              />
+              <div className="mb-3 mt-6 flex items-center justify-between">
+                <span className="text-[13px] font-semibold">Höger produkt · höjd</span>
+                <span className="font-mono text-xs text-[var(--bundla-orange)]">
+                  {offsetR > 0 ? "+" : ""}
+                  {offsetR}px
+                </span>
+              </div>
+              <Slider
+                min={-600}
+                max={600}
+                step={10}
+                value={[offsetR]}
+                onValueChange={([v]) => setOffsetR(v)}
+                aria-label="Höger produkt höjd"
+              />
+              <p className="mt-2.5 text-xs text-ink-muted">
+                Positivt värde lyfter produkten uppåt, t.ex. ugn över häll.
+              </p>
+            </div>
+
+            {/* Återställ */}
+            <div className="py-5">
+              <button
+                onClick={resetSettings}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[11px] border border-[var(--line-warm)] bg-white px-4 py-2.5 text-sm font-semibold text-ink-body transition-colors hover:bg-[var(--surface)]"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Återställ inställningar
+              </button>
             </div>
 
             {/* Mobile export */}

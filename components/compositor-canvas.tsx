@@ -12,6 +12,9 @@ interface CompositorCanvasProps {
   showPlus: boolean
   showGrid: boolean
   plusFrac: number
+  offsetL: number
+  offsetR: number
+  gridLines: number[]
   outputW: number
   outputH: number
   onCanvasReady: (canvas: HTMLCanvasElement) => void
@@ -98,6 +101,9 @@ export function CompositorCanvas({
   showPlus,
   showGrid,
   plusFrac,
+  offsetL,
+  offsetR,
+  gridLines,
   outputW,
   outputH,
   onCanvasReady,
@@ -161,6 +167,8 @@ export function CompositorCanvas({
       const leftInnerEdge = cx - sepW / 2
       const rightInnerEdge = cx + sepW / 2
 
+      // Per-product vertical nudge (positive = up) lets you lift one product
+      // above the other (e.g. a wall oven over a hob), like Tretti's built-ins.
       ctx.drawImage(
         leftImage,
         boundsL.x,
@@ -168,7 +176,7 @@ export function CompositorCanvas({
         boundsL.w,
         boundsL.h,
         leftInnerEdge - drawWL,
-        centerY - drawHL / 2,
+        centerY - drawHL / 2 - offsetL,
         drawWL,
         drawHL
       )
@@ -179,7 +187,7 @@ export function CompositorCanvas({
         boundsR.w,
         boundsR.h,
         rightInnerEdge,
-        centerY - drawHR / 2,
+        centerY - drawHR / 2 - offsetR,
         drawWR,
         drawHR
       )
@@ -216,6 +224,8 @@ export function CompositorCanvas({
     gap,
     showPlus,
     plusFrac,
+    offsetL,
+    offsetR,
     outputW,
     outputH,
     onCanvasReady,
@@ -235,18 +245,17 @@ export function CompositorCanvas({
         />
         {showGrid && (
           <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-            {/* Content band (top & bottom margin from the inner-margin setting) */}
-            <div
-              className="absolute left-0 right-0 border-t border-dashed border-[var(--bundla-orange)]/60"
-              style={{ top: `${(padding / outputH) * 100}%` }}
-            />
-            <div
-              className="absolute left-0 right-0 border-t border-dashed border-[var(--bundla-orange)]/60"
-              style={{ top: `${((outputH - padding) / outputH) * 100}%` }}
-            />
-            {/* Centre cross */}
-            <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-[var(--bundla-orange)]/30" />
-            <div className="absolute bottom-0 left-1/2 top-0 border-l border-dashed border-[var(--bundla-orange)]/30" />
+            {/* The template's horizontal guide lines (e.g. Tretti's grid). */}
+            {gridLines.map((fr, i) => (
+              <div
+                key={i}
+                className="absolute left-0 right-0 border-t border-dashed border-[var(--bundla-orange)]/60"
+                style={{ top: `${fr * 100}%` }}
+              />
+            ))}
+            {/* Centre lines */}
+            <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-[var(--bundla-orange)]/25" />
+            <div className="absolute bottom-0 left-1/2 top-0 border-l border-dashed border-[var(--bundla-orange)]/25" />
           </div>
         )}
         {!hasContent && (
