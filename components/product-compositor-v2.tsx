@@ -349,10 +349,12 @@ async function splitByFraction(blob: Blob, splitFraction: number): Promise<[stri
 type OutputFormat = { key: string; label: string; w: number; h: number; padding: number }
 
 // Output presets. Each customer/template can have its own dimensions and a
-// sensible default inner margin. Tretti's catalogue bundles are 2000×1700.
+// sensible default inner margin. Tretti's catalogue bundles are 2000×1700;
+// its grid (measured from their template) puts the product band between 7.7%
+// and 92.3% of the height, i.e. a top/bottom margin of ~130px on 1700.
 const FORMATS: OutputFormat[] = [
   { key: "square", label: "Kvadrat", w: 1000, h: 1000, padding: 30 },
-  { key: "tretti", label: "Tretti", w: 2000, h: 1700, padding: 150 },
+  { key: "tretti", label: "Tretti", w: 2000, h: 1700, padding: 130 },
 ]
 
 export function ProductCompositor() {
