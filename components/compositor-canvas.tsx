@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { cn } from "@/lib/utils"
 
 interface CompositorCanvasProps {
   leftImage: HTMLImageElement | null
@@ -11,11 +10,12 @@ interface CompositorCanvasProps {
   padding: number
   gap: number
   showPlus: boolean
+  outputW: number
+  outputH: number
   onCanvasReady: (canvas: HTMLCanvasElement) => void
 }
 
-const OUTPUT_SIZE = 1000
-// Size of the "+" separator relative to the canvas, and how thick its bars are.
+// Size of the "+" separator relative to the canvas height, and bar thickness.
 const PLUS_SIZE_FRAC = 0.12
 const PLUS_BAR_FRAC = 0.32
 const PLUS_COLOR = "#9e9e9e"
@@ -95,6 +95,8 @@ export function CompositorCanvas({
   padding,
   gap,
   showPlus,
+  outputW,
+  outputH,
   onCanvasReady,
 }: CompositorCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -106,14 +108,14 @@ export function CompositorCanvas({
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    canvas.width = OUTPUT_SIZE
-    canvas.height = OUTPUT_SIZE
+    canvas.width = outputW
+    canvas.height = outputH
 
     // Fill background
-    ctx.clearRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE)
+    ctx.clearRect(0, 0, outputW, outputH)
     if (!transparent) {
       ctx.fillStyle = backgroundColor
-      ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE)
+      ctx.fillRect(0, 0, outputW, outputH)
     }
 
     if (!leftImage && !rightImage) {
@@ -124,43 +126,36 @@ export function CompositorCanvas({
 
     setHasContent(true)
 
-    const availableH = OUTPUT_SIZE - padding * 2
-    const availableW = OUTPUT_SIZE - padding * 2
+    const availableH = Math.max(1, outputH - padding * 2)
+    const availableW = Math.max(1, outputW - padding * 2)
+    // Baseline the products sit on, and the centre line for the "+".
+    const baseline = padding + availableH
+    const centerY = padding + availableH / 2
 
     if (leftImage && rightImage) {
-      // Get tight content bounds for each image (removes transparent padding)
       const boundsL = getContentBounds(leftImage)
       const boundsR = getContentBounds(rightImage)
 
-      // Scale each image so its content fills availableH
-      const scaleL = availableH / boundsL.h
-      const scaleR = availableH / boundsR.h
-
-      let drawWL = boundsL.w * scaleL
-      let drawHL = boundsL.h * scaleL
-      let drawWR = boundsR.w * scaleR
-      let drawHR = boundsR.h * scaleR
-
-      // Reserve space for the "+" separator (with breathing room either side).
-      const plusSize = showPlus ? OUTPUT_SIZE * PLUS_SIZE_FRAC : 0
+      // Reserve a centred zone for the "+" (with breathing room either side).
+      const plusSize = showPlus ? outputH * PLUS_SIZE_FRAC : 0
       const sepW = showPlus ? plusSize + gap * 2 : gap
 
-      // If the combined width exceeds available width, shrink the images
-      // (never the separator) proportionally so the "+" stays readable.
-      const totalW = drawWL + sepW + drawWR
-      if (totalW > availableW) {
-        const imgAllowed = Math.max(1, availableW - sepW)
-        const shrink = imgAllowed / (drawWL + drawWR)
-        drawWL *= shrink
-        drawHL *= shrink
-        drawWR *= shrink
-        drawHR *= shrink
-      }
+      // Each product fits within its own half (width capped at halfW, height at
+      // availableH), preserving aspect. This keeps real proportions: a flat hob
+      // stays flat instead of being blown up to a tall oven's height.
+      const halfW = Math.max(1, (availableW - sepW) / 2)
+      const scaleL = Math.min(halfW / boundsL.w, availableH / boundsL.h)
+      const scaleR = Math.min(halfW / boundsR.w, availableH / boundsR.h)
+      const drawWL = boundsL.w * scaleL
+      const drawHL = boundsL.h * scaleL
+      const drawWR = boundsR.w * scaleR
+      const drawHR = boundsR.h * scaleR
 
-      // Center the pair horizontally; center each product vertically independently
-      const pairW = drawWL + sepW + drawWR
-      const startX = padding + (availableW - pairW) / 2
-      const centerY = padding + availableH / 2
+      // "+" fixed at the horizontal centre; products hug the centre gap and
+      // stand on the shared baseline (like Tretti's catalogue bundles).
+      const cx = outputW / 2
+      const leftInnerEdge = cx - sepW / 2
+      const rightInnerEdge = cx + sepW / 2
 
       ctx.drawImage(
         leftImage,
@@ -168,8 +163,8 @@ export function CompositorCanvas({
         boundsL.y,
         boundsL.w,
         boundsL.h,
-        startX,
-        centerY - drawHL / 2,
+        leftInnerEdge - drawWL,
+        baseline - drawHL,
         drawWL,
         drawHL
       )
@@ -179,14 +174,14 @@ export function CompositorCanvas({
         boundsR.y,
         boundsR.w,
         boundsR.h,
-        startX + drawWL + sepW,
-        centerY - drawHR / 2,
+        rightInnerEdge,
+        baseline - drawHR,
         drawWR,
         drawHR
       )
 
       if (showPlus) {
-        drawPlus(ctx, startX + drawWL + sepW / 2, centerY, plusSize)
+        drawPlus(ctx, cx, centerY, plusSize)
       }
     } else {
       const img = (leftImage || rightImage)!
@@ -201,32 +196,41 @@ export function CompositorCanvas({
         bounds.w,
         bounds.h,
         padding + (availableW - drawW) / 2,
-        padding + (availableH - drawH) / 2,
+        baseline - drawH,
         drawW,
         drawH
       )
     }
 
     onCanvasReady(canvas)
-  }, [leftImage, rightImage, backgroundColor, transparent, padding, gap, showPlus, onCanvasReady])
+  }, [
+    leftImage,
+    rightImage,
+    backgroundColor,
+    transparent,
+    padding,
+    gap,
+    showPlus,
+    outputW,
+    outputH,
+    onCanvasReady,
+  ])
 
   return (
     <div className="flex min-h-[300px] flex-1 items-center justify-center rounded-[22px] border border-[var(--line-warm)] bg-white p-6 shadow-[var(--shadow-pop)] sm:p-8">
       <div
-        className="checker relative w-full max-w-[560px] overflow-hidden rounded-2xl"
-        style={{ aspectRatio: "1 / 1" }}
+        className="checker relative w-full max-w-[600px] overflow-hidden rounded-2xl"
+        style={{ aspectRatio: `${outputW} / ${outputH}` }}
       >
         <canvas
           ref={canvasRef}
           aria-label="Sammansatt produktbild"
           className="h-full w-full"
-          style={{ aspectRatio: "1 / 1" }}
+          style={{ aspectRatio: `${outputW} / ${outputH}` }}
         />
         {!hasContent && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="px-4 text-center text-sm text-ink-muted">
-              Förhandsvisning av din bundle
-            </p>
+            <p className="px-4 text-center text-sm text-ink-muted">Förhandsvisning av din bundle</p>
           </div>
         )}
       </div>

@@ -346,6 +346,15 @@ async function splitByFraction(blob: Blob, splitFraction: number): Promise<[stri
   return [crop(0, splitX), crop(splitX, W - splitX)]
 }
 
+type OutputFormat = { key: string; label: string; w: number; h: number; padding: number }
+
+// Output presets. Each customer/template can have its own dimensions and a
+// sensible default inner margin. Tretti's catalogue bundles are 2000×1700.
+const FORMATS: OutputFormat[] = [
+  { key: "square", label: "Kvadrat", w: 1000, h: 1000, padding: 30 },
+  { key: "tretti", label: "Tretti", w: 2000, h: 1700, padding: 150 },
+]
+
 export function ProductCompositor() {
   const [images, setImages] = useState<[ImageState, ImageState]>([
     makeEmptyState(),
@@ -354,9 +363,16 @@ export function ProductCompositor() {
   const [bgColor, setBgColor] = useState("#ffffff")
   const [customColor, setCustomColor] = useState("#ffffff")
   const [transparentBg, setTransparentBg] = useState(true)
-  const [padding, setPadding] = useState(30)
+  const [format, setFormat] = useState<OutputFormat>(FORMATS[0])
+  const [padding, setPadding] = useState(FORMATS[0].padding)
   const [gap, setGap] = useState(20)
   const [showPlus, setShowPlus] = useState(true)
+
+  // Switching format also resets the inner margin to that format's default.
+  const selectFormat = (f: OutputFormat) => {
+    setFormat(f)
+    setPadding(f.padding)
+  }
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [usage, setUsage] = useState<{ used: number; quota: number; isAdmin?: boolean } | null>(null)
 
@@ -644,12 +660,14 @@ export function ProductCompositor() {
             padding={padding}
             gap={gap}
             showPlus={showPlus}
+            outputW={format.w}
+            outputH={format.h}
             onCanvasReady={handleCanvasReady}
           />
 
           <p className="mt-4 text-center text-xs text-ink-ghost">
             {hasAnyImage
-              ? "Färdig bundle · 1000 × 1000 px"
+              ? `Färdig bundle · ${format.w} × ${format.h} px`
               : "Dra in två bilder till vänster för att börja"}
           </p>
         </main>
@@ -689,6 +707,31 @@ export function ProductCompositor() {
                 onCheckedChange={setShowPlus}
                 aria-label="Visa plustecken mellan produkterna"
               />
+            </div>
+
+            {/* Format */}
+            <div className="border-b border-[var(--line-soft)] py-5">
+              <div className="mb-3 text-[13px] font-semibold">Format</div>
+              <div className="grid grid-cols-2 gap-2">
+                {FORMATS.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => selectFormat(f)}
+                    aria-label={`Format: ${f.label} ${f.w}×${f.h}`}
+                    className={cn(
+                      "rounded-lg px-3 py-2.5 text-left transition-all",
+                      format.key === f.key
+                        ? "border-[1.5px] border-[var(--bundla-orange)] bg-white"
+                        : "border border-[var(--line-warm)] bg-white hover:border-[var(--bundla-orange)]/50"
+                    )}
+                  >
+                    <div className="text-[13px] font-medium text-ink-body">{f.label}</div>
+                    <div className="font-mono text-[11px] text-ink-ghost">
+                      {f.w}×{f.h}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Bakgrundsfärg */}
@@ -750,7 +793,7 @@ export function ProductCompositor() {
               </div>
               <Slider
                 min={0}
-                max={200}
+                max={400}
                 step={10}
                 value={[padding]}
                 onValueChange={([v]) => setPadding(v)}
