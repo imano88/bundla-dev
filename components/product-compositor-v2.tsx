@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
-import { Download, Loader2, Info, AlertCircle, Wand2, RotateCcw } from "lucide-react"
+import { Download, Loader2, Info, AlertCircle, Wand2, RotateCcw, Menu, X, Users } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ImageDropZone } from "@/components/image-drop-zone"
@@ -410,6 +410,7 @@ export function ProductCompositor() {
   }
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [usage, setUsage] = useState<{ used: number; quota: number; isAdmin?: boolean } | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const refreshUsage = useCallback(() => {
     fetch("/api/usage")
@@ -601,7 +602,7 @@ export function ProductCompositor() {
           <button
             onClick={handleExport}
             disabled={!hasAnyImage || isProcessing}
-            className="btn-brand inline-flex items-center gap-2 rounded-[11px] px-5 py-2.5 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50"
+            className="btn-brand inline-flex items-center gap-2 rounded-[11px] px-4 py-2.5 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50 sm:px-5"
           >
             {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -610,6 +611,53 @@ export function ProductCompositor() {
             )}
             {isProcessing ? "Bearbetar…" : "Exportera PNG"}
           </button>
+
+          {/* Mobile overflow menu: Team, Hjälp and usage live here on small screens. */}
+          <div className="relative sm:hidden">
+            <button
+              type="button"
+              aria-label={menuOpen ? "Stäng meny" : "Öppna meny"}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex h-10 w-10 items-center justify-center rounded-[11px] border border-[var(--line-strong)] bg-white text-ink-body transition-colors hover:bg-[var(--surface)]"
+            >
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            {menuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40 bg-ink/20"
+                  onClick={() => setMenuOpen(false)}
+                  aria-hidden="true"
+                />
+                <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[16px] border border-[var(--line-soft)] bg-white p-2 shadow-[var(--shadow-float)]">
+                  {usage && usage.quota > 0 && (
+                    <div className="px-3 py-2 font-mono text-[11px] text-ink-muted">
+                      {usage.used} / {usage.quota} bundles denna månad
+                    </div>
+                  )}
+                  {usage?.isAdmin && (
+                    <a
+                      href="/studio/team"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-[11px] px-3 py-3 text-sm font-semibold text-ink-body transition-colors hover:bg-[var(--surface)]"
+                    >
+                      <Users className="h-4 w-4" />
+                      Team
+                    </a>
+                  )}
+                  <a
+                    href="/docs"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-[11px] px-3 py-3 text-sm font-semibold text-ink-body transition-colors hover:bg-[var(--surface)]"
+                  >
+                    <Info className="h-4 w-4" />
+                    Hjälp
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
