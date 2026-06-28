@@ -411,6 +411,8 @@ export function ProductCompositor() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [usage, setUsage] = useState<{ used: number; quota: number; isAdmin?: boolean } | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  // Incremented when friläggning succeeds, to trigger the dissolve-reveal.
+  const [revealKey, setRevealKey] = useState(0)
 
   const refreshUsage = useCallback(() => {
     fetch("/api/usage")
@@ -479,6 +481,7 @@ export function ProductCompositor() {
           next[1] = { ...next[1], processed: rightUrl, element: rightImg, status: "done" }
           return next
         })
+        setRevealKey((k) => k + 1)
       } else {
         const idx = (haveA ? 0 : 1) as 0 | 1
         const src = (haveA ? a : b) as string
@@ -491,6 +494,7 @@ export function ProductCompositor() {
           next[idx] = { ...next[idx], processed: url, element: img, status: "done" }
           return next
         })
+        setRevealKey((k) => k + 1)
       }
     } catch (err) {
       console.error("[frilaggning] error:", err)
@@ -745,6 +749,7 @@ export function ProductCompositor() {
             showPlus={showPlus}
             showGrid={showGrid}
             scanning={isProcessing}
+            revealKey={revealKey}
             plusFrac={plusFrac}
             offsetL={offsetL}
             offsetR={offsetR}

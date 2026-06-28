@@ -11,7 +11,10 @@ interface CompositorCanvasProps {
   gap: number
   showPlus: boolean
   showGrid: boolean
+  /** True while we wait for friläggning to come back (indeterminate sweep). */
   scanning: boolean
+  /** Bumped by the parent the moment friläggning succeeds; triggers the dissolve. */
+  revealKey: number
   plusFrac: number
   offsetL: number
   offsetR: number
@@ -21,9 +24,14 @@ interface CompositorCanvasProps {
   onCanvasReady: (canvas: HTMLCanvasElement) => void
 }
 
-// Scanner laser colour (kept teal on purpose, like the source design).
-const SCAN = "#14b8a6"
-const scanRgba = (a: number) => `rgba(20, 184, 166, ${a})`
+// Accent for the light sweep + guide line (teal, like the source design).
+const ACCENT = "#14b8a6"
+// Soft feather band (in %) on either side of the dissolve edge, and how long
+// the original-to-cutout reveal takes once the result lands.
+const FEATHER = 9
+const REVEAL_MS = 1100
+// Height of the light-sweep band as a fraction of the preview height.
+const BAND_FRAC = 0.22
 
 // Thickness of the "+" bars relative to its size, and its colour.
 const PLUS_BAR_FRAC = 0.32
@@ -106,6 +114,7 @@ export function CompositorCanvas({
   showPlus,
   showGrid,
   scanning,
+  revealKey,
   plusFrac,
   offsetL,
   offsetR,
@@ -116,6 +125,13 @@ export function CompositorCanvas({
 }: CompositorCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [hasContent, setHasContent] = useState(false)
+
+  // Dissolve-reveal: a snapshot of the "before" (original, with background)
+  // composite, masked away to uncover the freshly drawn cutout underneath.
+  const beforeFrameRef = useRef<string | null>(null)
+  const revealImgRef = useRef<HTMLImageElement>(null)
+  const sweepRef = useRef<HTMLDivElement>(null)
+  const [reveal, setReveal] = useState<string | null>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -237,6 +253,69 @@ export function CompositorCanvas({
     onCanvasReady,
   ])
 
+  // Snapshot the "before" composite the moment friläggning starts, so we can
+  // dissolve it away once the cutout result is drawn underneath.
+  useEffect(() => {
+    if (scanning && hasContent && canvasRef.current) {
+      try {
+        beforeFrameRef.current = canvasRef.current.toDataURL("image/png")
+      } catch {
+        beforeFrameRef.current = null
+      }
+    }
+  }, [scanning, hasContent])
+
+  // When the parent signals success, play the one-shot dissolve.
+  useEffect(() => {
+    if (revealKey > 0 && beforeFrameRef.current) {
+      setReveal(beforeFrameRef.current)
+    }
+  }, [revealKey])
+
+  // Drive the dissolve with requestAnimationFrame, mutating styles directly so
+  // we don't re-render every frame.
+  useEffect(() => {
+    if (!reveal) return
+
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    if (reduce) {
+      setReveal(null)
+      return
+    }
+
+    let raf = 0
+    let start: number | null = null
+    const half = (BAND_FRAC / 2) * 100
+
+    const step = (t: number) => {
+      if (start === null) start = t
+      const pos = Math.min(1, (t - start) / REVEAL_MS)
+      const pct = pos * 100
+      const a = Math.max(0, pct - FEATHER)
+      const b = Math.min(100, pct + FEATHER)
+      const mask = `linear-gradient(to bottom, transparent ${a}%, #000 ${b}%)`
+      const img = revealImgRef.current
+      if (img) {
+        img.style.webkitMaskImage = mask
+        img.style.maskImage = mask
+      }
+      const sweep = sweepRef.current
+      if (sweep) {
+        sweep.style.top = `${pct - half}%`
+        sweep.style.opacity = pos > 0.97 ? "0" : "1"
+      }
+      if (pos < 1) {
+        raf = requestAnimationFrame(step)
+      } else {
+        setReveal(null)
+      }
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [reveal])
+
   return (
     <div className="flex justify-center rounded-[22px] border border-[var(--line-warm)] bg-white p-4 shadow-[var(--shadow-pop)] sm:p-5">
       <div
@@ -249,47 +328,61 @@ export function CompositorCanvas({
           className="h-full w-full"
           style={{ aspectRatio: `${outputW} / ${outputH}` }}
         />
-        {scanning && (
+
+        {/* Waiting: a soft light band sweeps down the original while we wait. */}
+        {scanning && !reveal && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-            {/* scan grid */}
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `repeating-linear-gradient(0deg, ${scanRgba(
-                  0.1
-                )} 0 1px, transparent 1px 26px), repeating-linear-gradient(90deg, ${scanRgba(
-                  0.1
-                )} 0 1px, transparent 1px 26px)`,
-              }}
-            />
-            {/* focus reticle corners */}
-            <div className="absolute inset-3">
-              {[
-                "left-0 top-0 rounded-tl-[4px] border-l-2 border-t-2",
-                "right-0 top-0 rounded-tr-[4px] border-r-2 border-t-2",
-                "bottom-0 left-0 rounded-bl-[4px] border-b-2 border-l-2",
-                "bottom-0 right-0 rounded-br-[4px] border-b-2 border-r-2",
-              ].map((c) => (
-                <span key={c} className={`absolute h-5 w-5 ${c}`} style={{ borderColor: SCAN }} />
-              ))}
-            </div>
-            {/* sweeping laser beam */}
-            <div className="scan-beam absolute left-0 right-0">
+            <div className="sweep-loop absolute left-0 right-0" style={{ height: `${BAND_FRAC * 100}%` }}>
               <div
-                className="absolute bottom-0 left-0 right-0 h-[120px]"
-                style={{ background: `linear-gradient(to bottom, ${scanRgba(0)}, ${scanRgba(0.22)})` }}
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.55) 50%, rgba(255,255,255,0))",
+                  mixBlendMode: "overlay",
+                  filter: "blur(3px)",
+                }}
               />
               <div
-                className="absolute left-0 right-0 top-0 h-[40px]"
-                style={{ background: `linear-gradient(to top, ${scanRgba(0)}, ${scanRgba(0.18)})` }}
-              />
-              <div
-                className="absolute left-0 right-0 top-0 h-[2px]"
-                style={{ background: SCAN, boxShadow: `0 0 10px ${SCAN}, 0 0 22px ${SCAN}` }}
+                className="absolute left-0 right-0 top-1/2 h-px"
+                style={{ background: ACCENT, opacity: 0.45 }}
               />
             </div>
           </div>
         )}
+
+        {/* Reveal: dissolve the "before" snapshot away to uncover the cutout. */}
+        {reveal && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={revealImgRef}
+              src={reveal}
+              alt=""
+              className="absolute inset-0 h-full w-full"
+              style={{ objectFit: "fill" }}
+            />
+            <div
+              ref={sweepRef}
+              className="absolute left-0 right-0"
+              style={{ top: `-${(BAND_FRAC / 2) * 100}%`, height: `${BAND_FRAC * 100}%` }}
+            >
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.6) 50%, rgba(255,255,255,0))",
+                  mixBlendMode: "overlay",
+                  filter: "blur(3px)",
+                }}
+              />
+              <div
+                className="absolute left-0 right-0 top-1/2 h-px"
+                style={{ background: ACCENT, opacity: 0.5 }}
+              />
+            </div>
+          </div>
+        )}
+
         {showGrid && (
           <div className="pointer-events-none absolute inset-0" aria-hidden="true">
             {/* The template's horizontal guide lines (e.g. Tretti's grid). */}

@@ -197,22 +197,23 @@
     animation: rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Friläggning scan beam: sweeps up and down over the preview while processing. */
-  @keyframes scan-sweep {
+  /* Friläggning: a soft light band sweeps down the preview while we wait for
+     the result (indeterminate). The reveal dissolve itself is rAF-driven. */
+  @keyframes sweep-loop {
     from {
-      top: -3%;
+      top: -24%;
     }
     to {
-      top: 103%;
+      top: 100%;
     }
   }
-  .scan-beam {
-    animation: scan-sweep 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  .sweep-loop {
+    animation: sweep-loop 1.7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
   @media (prefers-reduced-motion: reduce) {
-    .scan-beam {
+    .sweep-loop {
       animation: none;
-      top: 50%;
+      display: none;
     }
   }
 }
