@@ -24,14 +24,19 @@ interface CompositorCanvasProps {
   onCanvasReady: (canvas: HTMLCanvasElement) => void
 }
 
-// Accent for the light sweep + guide line (teal, like the source design).
-const ACCENT = "#14b8a6"
-// Soft feather band (in %) on either side of the dissolve edge, and how long
-// the original-to-cutout reveal takes once the result lands.
-const FEATHER = 9
-const REVEAL_MS = 1100
-// Height of the light-sweep band as a fraction of the preview height.
-const BAND_FRAC = 0.22
+// Friläggning animation (an "x-ray scanning pass", per the source design).
+// A radiograph band sweeps the product; while we wait for the API it loops as a
+// scout pass, and once the cutout lands it does one extraction pass where the
+// original (with background) dissolves away behind the band.
+const FEATHER = 9 // soft % feather on either side of the dissolve edge
+const SCOUT_MS = 1500 // one loop of the indeterminate scout pass
+const EXTRACT_MS = 1700 // the final extraction pass (band + dissolve)
+// X-ray "lens" band: solid for ±BAND_SOLID px, feathering out to ±BAND_FEATHER.
+const BAND_SOLID = 16
+const BAND_FEATHER = 46
+// Radiograph look applied to the product inside the band.
+const XRAY_FILTER = "invert(1) contrast(1.45) brightness(1.05) hue-rotate(160deg) saturate(1.7)"
+const XRAY_TINT = "linear-gradient(135deg, #0a3a4a, #0d7a8f)"
 
 // Thickness of the "+" bars relative to its size, and its colour.
 const PLUS_BAR_FRAC = 0.32
@@ -126,12 +131,20 @@ export function CompositorCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [hasContent, setHasContent] = useState(false)
 
-  // Dissolve-reveal: a snapshot of the "before" (original, with background)
-  // composite, masked away to uncover the freshly drawn cutout underneath.
-  const beforeFrameRef = useRef<string | null>(null)
-  const revealImgRef = useRef<HTMLImageElement>(null)
-  const sweepRef = useRef<HTMLDivElement>(null)
-  const [reveal, setReveal] = useState<string | null>(null)
+  // X-ray scan: a snapshot of the "before" (original, with background) composite
+  // is used both for the radiograph band and as the layer that dissolves away to
+  // uncover the freshly drawn cutout underneath.
+  const [active, setActive] = useState(false)
+  const [snapSrc, setSnapSrc] = useState<string | null>(null)
+  const origRef = useRef<HTMLImageElement>(null) // dissolving original
+  const xrayRef = useRef<HTMLImageElement>(null) // radiograph copy (banded)
+  const tintRef = useRef<HTMLDivElement>(null) // cyan tint (banded)
+  // 'scout' = looping pre-scan while we wait; 'extract' = final dissolving pass.
+  const phaseRef = useRef<"scout" | "extract">("scout")
+  const scoutStartRef = useRef<number | null>(null)
+  const extractStartRef = useRef<number | null>(null)
+  const prevScanningRef = useRef(false)
+  const prevRevealRef = useRef(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -253,68 +266,91 @@ export function CompositorCanvas({
     onCanvasReady,
   ])
 
-  // Snapshot the "before" composite the moment friläggning starts, so we can
-  // dissolve it away once the cutout result is drawn underneath.
+  // Phase machine: snapshot on scan start (scout), switch to the extraction pass
+  // when the parent signals success, and stop if scanning ends without a result.
   useEffect(() => {
-    if (scanning && hasContent && canvasRef.current) {
+    const startedScanning = scanning && !prevScanningRef.current
+    const finished = revealKey > 0 && revealKey !== prevRevealRef.current
+
+    if (startedScanning && hasContent && canvasRef.current) {
       try {
-        beforeFrameRef.current = canvasRef.current.toDataURL("image/png")
+        setSnapSrc(canvasRef.current.toDataURL("image/png"))
+        phaseRef.current = "scout"
+        scoutStartRef.current = null
+        setActive(true)
       } catch {
-        beforeFrameRef.current = null
+        setSnapSrc(null)
       }
     }
-  }, [scanning, hasContent])
 
-  // When the parent signals success, play the one-shot dissolve.
-  useEffect(() => {
-    if (revealKey > 0 && beforeFrameRef.current) {
-      setReveal(beforeFrameRef.current)
+    if (finished) {
+      // Hand off from the looping scout to the one-shot extraction pass.
+      phaseRef.current = "extract"
+      extractStartRef.current = null
+      setActive(true)
+    } else if (!scanning && prevScanningRef.current && phaseRef.current === "scout") {
+      // Scanning stopped without success (error/cancel) — drop the overlay.
+      setActive(false)
     }
-  }, [revealKey])
 
-  // Drive the dissolve with requestAnimationFrame, mutating styles directly so
-  // we don't re-render every frame.
+    prevScanningRef.current = scanning
+    prevRevealRef.current = revealKey
+  }, [scanning, revealKey, hasContent])
+
+  // Drive the scan with requestAnimationFrame, mutating mask styles directly so
+  // we don't re-render every frame. `phaseRef` is read live, so the scout→extract
+  // hand-off is picked up mid-flight without restarting the loop.
   useEffect(() => {
-    if (!reveal) return
+    if (!active) return
 
     const reduce =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     if (reduce) {
-      setReveal(null)
+      // No motion: just let the cutout stand once we reach the extract phase.
+      if (phaseRef.current === "extract") setActive(false)
       return
     }
 
     let raf = 0
-    let start: number | null = null
-    const half = (BAND_FRAC / 2) * 100
+
+    const apply = (bandPct: number, dissolvePct: number) => {
+      const bandMask = `linear-gradient(to bottom, transparent calc(${bandPct}% - ${BAND_FEATHER}px), #000 calc(${bandPct}% - ${BAND_SOLID}px), #000 calc(${bandPct}% + ${BAND_SOLID}px), transparent calc(${bandPct}% + ${BAND_FEATHER}px))`
+      for (const el of [xrayRef.current, tintRef.current]) {
+        if (el) {
+          el.style.webkitMaskImage = bandMask
+          el.style.maskImage = bandMask
+        }
+      }
+      const a = Math.max(0, dissolvePct - FEATHER)
+      const b = Math.min(100, dissolvePct + FEATHER)
+      const dMask = `linear-gradient(to bottom, transparent ${a}%, #000 ${b}%)`
+      if (origRef.current) {
+        const m = dissolvePct <= 0 ? "none" : dMask
+        origRef.current.style.webkitMaskImage = m
+        origRef.current.style.maskImage = m
+      }
+    }
 
     const step = (t: number) => {
-      if (start === null) start = t
-      const pos = Math.min(1, (t - start) / REVEAL_MS)
-      const pct = pos * 100
-      const a = Math.max(0, pct - FEATHER)
-      const b = Math.min(100, pct + FEATHER)
-      const mask = `linear-gradient(to bottom, transparent ${a}%, #000 ${b}%)`
-      const img = revealImgRef.current
-      if (img) {
-        img.style.webkitMaskImage = mask
-        img.style.maskImage = mask
-      }
-      const sweep = sweepRef.current
-      if (sweep) {
-        sweep.style.top = `${pct - half}%`
-        sweep.style.opacity = pos > 0.97 ? "0" : "1"
-      }
-      if (pos < 1) {
-        raf = requestAnimationFrame(step)
+      if (phaseRef.current === "extract") {
+        if (extractStartRef.current === null) extractStartRef.current = t
+        const pos = Math.min(1, (t - extractStartRef.current) / EXTRACT_MS)
+        apply(pos * 100, pos * 100)
+        if (pos >= 1) {
+          setActive(false)
+          return
+        }
       } else {
-        setReveal(null)
+        if (scoutStartRef.current === null) scoutStartRef.current = t
+        const p = ((t - scoutStartRef.current) % SCOUT_MS) / SCOUT_MS
+        apply(p * 100, 0)
       }
+      raf = requestAnimationFrame(step)
     }
     raf = requestAnimationFrame(step)
     return () => cancelAnimationFrame(raf)
-  }, [reveal])
+  }, [active])
 
   return (
     <div className="flex justify-center rounded-[22px] border border-[var(--line-warm)] bg-white p-4 shadow-[var(--shadow-pop)] sm:p-5">
@@ -329,57 +365,34 @@ export function CompositorCanvas({
           style={{ aspectRatio: `${outputW} / ${outputH}` }}
         />
 
-        {/* Waiting: a soft light band sweeps down the original while we wait. */}
-        {scanning && !reveal && (
+        {/* X-ray scan: radiograph band over the original; during the extraction
+            pass the original layer dissolves to uncover the cutout underneath. */}
+        {active && snapSrc && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-            <div className="sweep-loop absolute left-0 right-0" style={{ height: `${BAND_FRAC * 100}%` }}>
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.55) 50%, rgba(255,255,255,0))",
-                  mixBlendMode: "overlay",
-                  filter: "blur(3px)",
-                }}
-              />
-              <div
-                className="absolute left-0 right-0 top-1/2 h-px"
-                style={{ background: ACCENT, opacity: 0.45 }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Reveal: dissolve the "before" snapshot away to uncover the cutout. */}
-        {reveal && (
-          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            {/* The original (with background), dissolving away during extraction. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              ref={revealImgRef}
-              src={reveal}
+              ref={origRef}
+              src={snapSrc}
               alt=""
               className="absolute inset-0 h-full w-full"
               style={{ objectFit: "fill" }}
             />
+            {/* Radiograph copy, visible only inside the moving band. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={xrayRef}
+              src={snapSrc}
+              alt=""
+              className="absolute inset-0 h-full w-full"
+              style={{ objectFit: "fill", filter: XRAY_FILTER }}
+            />
+            {/* Cyan tint to push the x-ray feel, also banded. */}
             <div
-              ref={sweepRef}
-              className="absolute left-0 right-0"
-              style={{ top: `-${(BAND_FRAC / 2) * 100}%`, height: `${BAND_FRAC * 100}%` }}
-            >
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.6) 50%, rgba(255,255,255,0))",
-                  mixBlendMode: "overlay",
-                  filter: "blur(3px)",
-                }}
-              />
-              <div
-                className="absolute left-0 right-0 top-1/2 h-px"
-                style={{ background: ACCENT, opacity: 0.5 }}
-              />
-            </div>
+              ref={tintRef}
+              className="absolute inset-0"
+              style={{ background: XRAY_TINT, mixBlendMode: "color", opacity: 0.55 }}
+            />
           </div>
         )}
 

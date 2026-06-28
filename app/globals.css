@@ -197,23 +197,4 @@
     animation: rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Friläggning: a soft light band sweeps down the preview while we wait for
-     the result (indeterminate). The reveal dissolve itself is rAF-driven. */
-  @keyframes sweep-loop {
-    from {
-      top: -24%;
-    }
-    to {
-      top: 100%;
-    }
-  }
-  .sweep-loop {
-    animation: sweep-loop 1.7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .sweep-loop {
-      animation: none;
-      display: none;
-    }
-  }
 }
