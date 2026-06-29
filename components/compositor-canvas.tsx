@@ -303,12 +303,26 @@ export function CompositorCanvas({
   useEffect(() => {
     if (!active) return
 
+    const canvas = canvasRef.current
+    // Fade the finished bundle in from hidden once the wipe has lifted the
+    // original away — so the differently-laid-out cutout never shows *behind*
+    // the original mid-wipe.
+    const revealCutout = () => {
+      if (canvas) {
+        canvas.style.transition = "opacity .35s ease"
+        canvas.style.opacity = "1"
+      }
+    }
+
     const reduce =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     if (reduce) {
       // No motion: just let the cutout stand once we reach the extract phase.
-      if (phaseRef.current === "extract") setActive(false)
+      if (phaseRef.current === "extract") {
+        revealCutout()
+        setActive(false)
+      }
       return
     }
 
@@ -334,14 +348,24 @@ export function CompositorCanvas({
 
     const step = (t: number) => {
       if (phaseRef.current === "extract") {
-        if (extractStartRef.current === null) extractStartRef.current = t
+        if (extractStartRef.current === null) {
+          extractStartRef.current = t
+          // Hide the (already redrawn) cutout while the band lifts the original.
+          if (canvas) {
+            canvas.style.transition = "none"
+            canvas.style.opacity = "0"
+          }
+        }
         const pos = Math.min(1, (t - extractStartRef.current) / EXTRACT_MS)
         apply(pos * 100, pos * 100)
         if (pos >= 1) {
+          revealCutout()
           setActive(false)
           return
         }
       } else {
+        // Scout pass: keep the original (canvas) fully visible underneath.
+        if (canvas && canvas.style.opacity !== "1") canvas.style.opacity = "1"
         if (scoutStartRef.current === null) scoutStartRef.current = t
         const p = ((t - scoutStartRef.current) % SCOUT_MS) / SCOUT_MS
         apply(p * 100, 0)
@@ -349,7 +373,11 @@ export function CompositorCanvas({
       raf = requestAnimationFrame(step)
     }
     raf = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      cancelAnimationFrame(raf)
+      // Never leave the canvas stuck hidden if we unmount mid-animation.
+      if (canvas) canvas.style.opacity = "1"
+    }
   }, [active])
 
   return (
