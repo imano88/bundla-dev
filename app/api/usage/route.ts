@@ -4,6 +4,18 @@ export const runtime = "nodejs"
 
 // Returns the current organisation's monthly usage for the meter in the Studio.
 export async function GET() {
+  const skipAuth = process.env.SKIP_AUTH === "true"
+
+  // In dev mode, return dummy usage data
+  if (skipAuth) {
+    return Response.json({
+      hasOrg: true,
+      used: 0,
+      quota: 999,
+      isAdmin: true,
+    })
+  }
+
   const supabase = await createClient()
   const {
     data: { user },

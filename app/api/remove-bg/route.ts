@@ -41,41 +41,45 @@ export async function POST(req: NextRequest) {
   }
 
   // Auth + quota: reserve one credit before doing the paid work.
+  const skipAuth = process.env.SKIP_AUTH === "true"
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) {
+  if (!user && !skipAuth) {
     return Response.json({ error: "unauthorized" }, { status: 401 })
   }
 
-  const { data: consumeData, error: consumeError } = await supabase.rpc("consume_credit")
-  const quota = Array.isArray(consumeData) ? consumeData[0] : consumeData
-  if (consumeError || !quota?.allowed) {
-    console.error(
-      "[remove-bg] consume_credit blocked",
-      JSON.stringify({
-        userId: user.id,
-        consumeError: consumeError
-          ? {
-              message: consumeError.message,
-              code: (consumeError as { code?: string }).code,
-              details: (consumeError as { details?: string }).details,
-              hint: (consumeError as { hint?: string }).hint,
-            }
-          : null,
-        quota,
-      })
-    )
-    return Response.json(
-      {
-        error: "quota",
-        message: quota
-          ? "Månadskvoten är slut. Hör av dig för att utöka."
-          : "Du har inte åtkomst till friläggning.",
-      },
-      { status: 429 }
-    )
+  // Skip quota check in dev mode
+  if (!skipAuth) {
+    const { data: consumeData, error: consumeError } = await supabase.rpc("consume_credit")
+    const quota = Array.isArray(consumeData) ? consumeData[0] : consumeData
+    if (consumeError || !quota?.allowed) {
+      console.error(
+        "[remove-bg] consume_credit blocked",
+        JSON.stringify({
+          userId: user.id,
+          consumeError: consumeError
+            ? {
+                message: consumeError.message,
+                code: (consumeError as { code?: string }).code,
+                details: (consumeError as { details?: string }).details,
+                hint: (consumeError as { hint?: string }).hint,
+              }
+            : null,
+          quota,
+        })
+      )
+      return Response.json(
+        {
+          error: "quota",
+          message: quota
+            ? "Månadskvoten är slut. Hör av dig för att utöka."
+            : "Du har inte åtkomst till friläggning.",
+        },
+        { status: 429 }
+      )
+    }
   }
 
   const refund = async () => {
