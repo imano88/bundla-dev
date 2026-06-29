@@ -86,7 +86,7 @@ export function LandingPage() {
           </h1>
           <p className="mt-5 max-w-[440px] text-[17px] leading-relaxed text-ink-body sm:text-[19px]">
             Ladda upp två produkter. Bundla tar bort bakgrunden, sätter ihop dem och ger dig en
-            butiksklar paketbild på sekunder.
+            butiksklar paketbild på sekunder. [IMAN TEST]
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
             <Link
