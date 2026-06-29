@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       console.error(
         "[remove-bg] consume_credit blocked",
         JSON.stringify({
-          userId: user.id,
+          userId: user?.id,
           consumeError: consumeError
             ? {
                 message: consumeError.message,

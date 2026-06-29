@@ -384,6 +384,8 @@ export function ProductCompositor() {
   const [plusFrac, setPlusFrac] = useState(DEFAULT_PLUS_FRAC)
   const [offsetL, setOffsetL] = useState(0)
   const [offsetR, setOffsetR] = useState(0)
+  const [offsetXL, setOffsetXL] = useState(0)
+  const [offsetXR, setOffsetXR] = useState(0)
   const [customW, setCustomW] = useState(1500)
   const [customH, setCustomH] = useState(1500)
 
@@ -398,6 +400,8 @@ export function ProductCompositor() {
     setGap(f.gap)
     setOffsetL(0)
     setOffsetR(0)
+    setOffsetXL(0)
+    setOffsetXR(0)
   }
 
   // Reset the adjustment sliders to the current format's defaults.
@@ -407,7 +411,20 @@ export function ProductCompositor() {
     setPlusFrac(DEFAULT_PLUS_FRAC)
     setOffsetL(0)
     setOffsetR(0)
+    setOffsetXL(0)
+    setOffsetXR(0)
   }
+  const handleDragOffsetChange = useCallback((side: "left" | "right", offsetX: number, offsetY: number) => {
+    if (side === "left") { setOffsetXL(offsetX); setOffsetL(offsetY) }
+    else { setOffsetXR(offsetX); setOffsetR(offsetY) }
+  }, [])
+
+  const handleCanvasResize = useCallback((w: number, h: number) => {
+    setFormat(FORMATS.find((f) => f.key === "custom")!)
+    setCustomW(w)
+    setCustomH(h)
+  }, [])
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [usage, setUsage] = useState<{ used: number; quota: number; isAdmin?: boolean } | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -753,10 +770,14 @@ export function ProductCompositor() {
             plusFrac={plusFrac}
             offsetL={offsetL}
             offsetR={offsetR}
+            offsetXL={offsetXL}
+            offsetXR={offsetXR}
             gridLines={format.gridLines}
             outputW={outW}
             outputH={outH}
             onCanvasReady={handleCanvasReady}
+            onDragOffsetChange={handleDragOffsetChange}
+            onCanvasResize={handleCanvasResize}
           />
 
           <p className="mt-3 text-center text-xs text-ink-ghost">
