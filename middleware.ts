@@ -6,6 +6,11 @@ import { getSupabaseUrl } from "@/lib/supabase/url"
 // a valid session is required, otherwise redirect to /login (pages) or 401 (api).
 // Marketing pages stay public.
 export async function middleware(req: NextRequest) {
+  // SKIP_AUTH=true bypasses auth entirely — only set in iman/dev Vercel, never in main.
+  if (process.env.SKIP_AUTH === "true") {
+    return NextResponse.next({ request: req })
+  }
+
   let res = NextResponse.next({ request: req })
 
   const supabase = createServerClient(
