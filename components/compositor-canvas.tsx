@@ -25,12 +25,15 @@ interface CompositorCanvasProps {
 }
 
 // Friläggning animation (an "x-ray scanning pass", per the source design).
-// A radiograph band sweeps the product; while we wait for the API it loops as a
-// scout pass, and once the cutout lands it does one extraction pass where the
-// original (with background) dissolves away behind the band.
-const FEATHER = 9 // soft % feather on either side of the dissolve edge
+// While we wait for the API a radiograph band loops over the product (scout).
+// When the cutout lands we cross-dissolve the original to the finished bundle
+// with a blur + micro-zoom — the blur hides the fact that the cutout is laid
+// out at a different size, so it reads as "resolving into focus" rather than a
+// product growing/rolling in.
 const SCOUT_MS = 1500 // one loop of the indeterminate scout pass
-const EXTRACT_MS = 1700 // the final extraction pass (band + dissolve)
+const EXTRACT_MS = 650 // the focus-dissolve once the result lands
+const BLUR_MAX = 10 // px of blur at the midpoint of the dissolve
+const ZOOM_MAX = 0.04 // extra scale the finished bundle settles in from
 // X-ray "lens" band: solid for ±BAND_SOLID px, feathering out to ±BAND_FEATHER.
 const BAND_SOLID = 16
 const BAND_FEATHER = 46
@@ -297,30 +300,30 @@ export function CompositorCanvas({
     prevRevealRef.current = revealKey
   }, [scanning, revealKey, hasContent])
 
-  // Drive the scan with requestAnimationFrame, mutating mask styles directly so
-  // we don't re-render every frame. `phaseRef` is read live, so the scout→extract
+  // Drive the scan with requestAnimationFrame, mutating styles directly so we
+  // don't re-render every frame. `phaseRef` is read live, so the scout→extract
   // hand-off is picked up mid-flight without restarting the loop.
   useEffect(() => {
     if (!active) return
 
     const canvas = canvasRef.current
-    // Fade the finished bundle in from hidden once the wipe has lifted the
-    // original away — so the differently-laid-out cutout never shows *behind*
-    // the original mid-wipe.
-    const revealCutout = () => {
-      if (canvas) {
-        canvas.style.transition = "opacity .35s ease"
-        canvas.style.opacity = "1"
-      }
+    const easeInOut = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2)
+
+    // Restore the finished bundle to its clean, sharp state.
+    const settleCanvas = () => {
+      if (!canvas) return
+      canvas.style.transition = "none"
+      canvas.style.opacity = "1"
+      canvas.style.filter = "none"
+      canvas.style.transform = "none"
     }
 
     const reduce =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     if (reduce) {
-      // No motion: just let the cutout stand once we reach the extract phase.
       if (phaseRef.current === "extract") {
-        revealCutout()
+        settleCanvas()
         setActive(false)
       }
       return
@@ -328,7 +331,8 @@ export function CompositorCanvas({
 
     let raf = 0
 
-    const apply = (bandPct: number, dissolvePct: number) => {
+    // Scout band: reveal a radiograph copy of the product inside a moving window.
+    const applyScout = (bandPct: number) => {
       const bandMask = `linear-gradient(to bottom, transparent calc(${bandPct}% - ${BAND_FEATHER}px), #000 calc(${bandPct}% - ${BAND_SOLID}px), #000 calc(${bandPct}% + ${BAND_SOLID}px), transparent calc(${bandPct}% + ${BAND_FEATHER}px))`
       for (const el of [xrayRef.current, tintRef.current]) {
         if (el) {
@@ -336,47 +340,53 @@ export function CompositorCanvas({
           el.style.maskImage = bandMask
         }
       }
-      const a = Math.max(0, dissolvePct - FEATHER)
-      const b = Math.min(100, dissolvePct + FEATHER)
-      const dMask = `linear-gradient(to bottom, transparent ${a}%, #000 ${b}%)`
-      if (origRef.current) {
-        const m = dissolvePct <= 0 ? "none" : dMask
-        origRef.current.style.webkitMaskImage = m
-        origRef.current.style.maskImage = m
-      }
     }
 
     const step = (t: number) => {
       if (phaseRef.current === "extract") {
-        if (extractStartRef.current === null) {
-          extractStartRef.current = t
-          // Hide the (already redrawn) cutout while the band lifts the original.
-          if (canvas) {
-            canvas.style.transition = "none"
-            canvas.style.opacity = "0"
-          }
-        }
+        if (extractStartRef.current === null) extractStartRef.current = t
         const pos = Math.min(1, (t - extractStartRef.current) / EXTRACT_MS)
-        apply(pos * 100, pos * 100)
+        const e = easeInOut(pos)
+
+        // Original (with background) blurs out as the finished bundle blurs in.
+        // Both are soft through the middle, so the size difference between the
+        // two layouts never reads as a hard edge or a product "growing".
+        if (origRef.current) {
+          origRef.current.style.opacity = String(1 - e)
+          origRef.current.style.filter = `blur(${e * BLUR_MAX}px)`
+        }
+        for (const el of [xrayRef.current, tintRef.current]) {
+          if (el) el.style.opacity = String(1 - e)
+        }
+        if (canvas) {
+          canvas.style.transition = "none"
+          canvas.style.opacity = String(e)
+          canvas.style.filter = `blur(${(1 - e) * BLUR_MAX}px)`
+          canvas.style.transform = `scale(${1 + (1 - e) * ZOOM_MAX})`
+          canvas.style.transformOrigin = "center"
+        }
+
         if (pos >= 1) {
-          revealCutout()
+          settleCanvas()
           setActive(false)
           return
         }
       } else {
-        // Scout pass: keep the original (canvas) fully visible underneath.
-        if (canvas && canvas.style.opacity !== "1") canvas.style.opacity = "1"
+        // Scout pass: keep the original (canvas) fully visible and sharp.
+        if (canvas && (canvas.style.opacity !== "1" || canvas.style.filter !== "none")) {
+          settleCanvas()
+        }
         if (scoutStartRef.current === null) scoutStartRef.current = t
         const p = ((t - scoutStartRef.current) % SCOUT_MS) / SCOUT_MS
-        apply(p * 100, 0)
+        applyScout(p * 100)
       }
       raf = requestAnimationFrame(step)
     }
     raf = requestAnimationFrame(step)
     return () => {
       cancelAnimationFrame(raf)
-      // Never leave the canvas stuck hidden if we unmount mid-animation.
-      if (canvas) canvas.style.opacity = "1"
+      // Never leave the canvas stuck mid-transition if we unmount.
+      settleCanvas()
     }
   }, [active])
 
