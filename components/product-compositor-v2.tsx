@@ -367,6 +367,7 @@ const FORMATS: OutputFormat[] = [
 
 // "+" size as a fraction of canvas height. Tretti's measured ≈ 0.10.
 const DEFAULT_PLUS_FRAC = 0.1
+const CUSTOM_FORMAT = FORMATS.find((f) => f.key === "custom")!
 
 export function ProductCompositor() {
   const [images, setImages] = useState<[ImageState, ImageState]>([
@@ -386,6 +387,8 @@ export function ProductCompositor() {
   const [offsetR, setOffsetR] = useState(0)
   const [offsetXL, setOffsetXL] = useState(0)
   const [offsetXR, setOffsetXR] = useState(0)
+  const [productScaleL, setProductScaleL] = useState(1)
+  const [productScaleR, setProductScaleR] = useState(1)
   const [customW, setCustomW] = useState(1500)
   const [customH, setCustomH] = useState(1500)
 
@@ -402,6 +405,8 @@ export function ProductCompositor() {
     setOffsetR(0)
     setOffsetXL(0)
     setOffsetXR(0)
+    setProductScaleL(1)
+    setProductScaleR(1)
   }
 
   // Reset the adjustment sliders to the current format's defaults.
@@ -413,16 +418,31 @@ export function ProductCompositor() {
     setOffsetR(0)
     setOffsetXL(0)
     setOffsetXR(0)
+    setProductScaleL(1)
+    setProductScaleR(1)
   }
   const handleDragOffsetChange = useCallback((side: "left" | "right", offsetX: number, offsetY: number) => {
     if (side === "left") { setOffsetXL(offsetX); setOffsetL(offsetY) }
     else { setOffsetXR(offsetX); setOffsetR(offsetY) }
   }, [])
 
+  const handleProductScaleChange = useCallback((side: "left" | "right", scale: number) => {
+    if (side === "left") setProductScaleL(scale)
+    else setProductScaleR(scale)
+  }, [])
+
   const handleCanvasResize = useCallback((w: number, h: number) => {
-    setFormat(FORMATS.find((f) => f.key === "custom")!)
+    setFormat(CUSTOM_FORMAT)
     setCustomW(w)
     setCustomH(h)
+  }, [])
+
+  // Track blob URLs created for single-image friläggning so they can be revoked
+  // when replaced or on unmount (dual-image path uses toDataURL, no blob leak there).
+  const blobUrlsRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    const urls = blobUrlsRef.current
+    return () => { urls.forEach((u) => URL.revokeObjectURL(u)) }
   }, [])
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -505,9 +525,16 @@ export function ProductCompositor() {
         const norm = await normalizeImageToPng(src)
         const cutout = await photoroomRemove(norm)
         const url = URL.createObjectURL(cutout)
+        blobUrlsRef.current.add(url)
         const img = await loadImage(url)
         setImages((prev) => {
           const next = [...prev] as [ImageState, ImageState]
+          // Revoke the previous blob URL for this slot before replacing it.
+          const oldUrl = next[idx].processed
+          if (oldUrl?.startsWith("blob:")) {
+            URL.revokeObjectURL(oldUrl)
+            blobUrlsRef.current.delete(oldUrl)
+          }
           next[idx] = { ...next[idx], processed: url, element: img, status: "done" }
           return next
         })
@@ -527,17 +554,22 @@ export function ProductCompositor() {
     }
   }, [images, refreshUsage])
 
-  const handleImageChange = (dataUrl: string, file: File, index: 0 | 1) => {
+  const handleImageChange = useCallback((dataUrl: string, file: File, index: 0 | 1) => {
     processImage(dataUrl, file, index)
-  }
+  }, [processImage])
 
-  const handleRemove = (index: 0 | 1) => {
+  const handleRemove = useCallback((index: 0 | 1) => {
     setImages((prev) => {
       const next = [...prev] as [ImageState, ImageState]
+      const oldUrl = next[index].processed
+      if (oldUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(oldUrl)
+        blobUrlsRef.current.delete(oldUrl)
+      }
       next[index] = makeEmptyState()
       return next
     })
-  }
+  }, [])
 
   const handleExport = useCallback(() => {
     const canvas = canvasRef.current
@@ -772,11 +804,14 @@ export function ProductCompositor() {
             offsetR={offsetR}
             offsetXL={offsetXL}
             offsetXR={offsetXR}
+            productScaleL={productScaleL}
+            productScaleR={productScaleR}
             gridLines={format.gridLines}
             outputW={outW}
             outputH={outH}
             onCanvasReady={handleCanvasReady}
             onDragOffsetChange={handleDragOffsetChange}
+            onProductScaleChange={handleProductScaleChange}
             onCanvasResize={handleCanvasResize}
           />
 

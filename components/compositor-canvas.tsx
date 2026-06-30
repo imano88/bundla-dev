@@ -20,13 +20,18 @@ interface CompositorCanvasProps {
   offsetR: number
   offsetXL: number
   offsetXR: number
+  productScaleL: number
+  productScaleR: number
   gridLines: number[]
   outputW: number
   outputH: number
   onCanvasReady: (canvas: HTMLCanvasElement) => void
   onDragOffsetChange: (side: "left" | "right", offsetX: number, offsetY: number) => void
+  onProductScaleChange: (side: "left" | "right", scale: number) => void
   onCanvasResize: (w: number, h: number) => void
 }
+
+const easeInOut = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2)
 
 // Friläggning animation (an "x-ray scanning pass", per the source design).
 // While we wait for the API a radiograph band loops over the product (scout).
@@ -132,11 +137,14 @@ export function CompositorCanvas({
   offsetR,
   offsetXL,
   offsetXR,
+  productScaleL,
+  productScaleR,
   gridLines,
   outputW,
   outputH,
   onCanvasReady,
   onDragOffsetChange,
+  onProductScaleChange,
   onCanvasResize,
 }: CompositorCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -156,7 +164,11 @@ export function CompositorCanvas({
   const outputWRef = useRef(outputW)
   const outputHRef = useRef(outputH)
   const activeRef = useRef(false)
+  const productScaleLRef = useRef(productScaleL)
+  const productScaleRRef = useRef(productScaleR)
+  const onCanvasReadyRef = useRef(onCanvasReady)
   const onDragOffsetChangeRef = useRef(onDragOffsetChange)
+  const onProductScaleChangeRef = useRef(onProductScaleChange)
   const onCanvasResizeRef = useRef(onCanvasResize)
   useEffect(() => { offsetXLRef.current = offsetXL }, [offsetXL])
   useEffect(() => { offsetXRRef.current = offsetXR }, [offsetXR])
@@ -164,7 +176,11 @@ export function CompositorCanvas({
   useEffect(() => { offsetRRef.current = offsetR }, [offsetR])
   useEffect(() => { outputWRef.current = outputW }, [outputW])
   useEffect(() => { outputHRef.current = outputH }, [outputH])
+  useEffect(() => { productScaleLRef.current = productScaleL }, [productScaleL])
+  useEffect(() => { productScaleRRef.current = productScaleR }, [productScaleR])
+  useEffect(() => { onCanvasReadyRef.current = onCanvasReady }, [onCanvasReady])
   useEffect(() => { onDragOffsetChangeRef.current = onDragOffsetChange }, [onDragOffsetChange])
+  useEffect(() => { onProductScaleChangeRef.current = onProductScaleChange }, [onProductScaleChange])
   useEffect(() => { onCanvasResizeRef.current = onCanvasResize }, [onCanvasResize])
 
   // Drag state for product repositioning.
@@ -175,7 +191,31 @@ export function CompositorCanvas({
     startOffsetX: number
     startOffsetY: number
   } | null>(null)
-  const [dragDisplay, setDragDisplay] = useState<{ side: "left" | "right"; x: number; y: number } | null>(null)
+
+  // Drag state for product scaling (corner drag).
+  const scaleDragRef = useRef<{
+    side: "left" | "right"
+    startScale: number
+    centerPageX: number
+    centerPageY: number
+    startDist: number
+  } | null>(null)
+
+  const [dragDisplay, setDragDisplay] = useState<{
+    side: "left" | "right"
+    x?: number
+    y?: number
+    scale?: number
+  } | null>(null)
+
+  // Which product is hovered + corner handle positions (display space, relative to canvas wrapper).
+  const [productHover, setProductHover] = useState<{
+    side: "left" | "right"
+    displayCorners: Array<{ x: number; y: number }>
+    nearCornerIdx: number | null
+  } | null>(null)
+  // Previous hover values — used to skip redundant setState calls on every mousemove.
+  const prevHoverKeyRef = useRef<string | null>(null)
 
   // Drag state for canvas resize.
   const resizeDragRef = useRef<{
@@ -195,40 +235,110 @@ export function CompositorCanvas({
     const rect = canvas.getBoundingClientRect()
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
+    const dispScaleX = rect.width / canvas.width
+    const dispScaleY = rect.height / canvas.height
     const cx = (e.clientX - rect.left) * scaleX
     const cy = (e.clientY - rect.top) * scaleY
 
     const bl = renderedBoundsRef.current.left
     const br = renderedBoundsRef.current.right
     let side: "left" | "right" | null = null
+    let bounds: { x: number; y: number; w: number; h: number } | null = null
     let startOffsetX = 0, startOffsetY = 0
 
     if (bl && cx >= bl.x && cx <= bl.x + bl.w && cy >= bl.y && cy <= bl.y + bl.h) {
-      side = "left"; startOffsetX = offsetXLRef.current; startOffsetY = offsetLRef.current
+      side = "left"; bounds = bl; startOffsetX = offsetXLRef.current; startOffsetY = offsetLRef.current
     } else if (br && cx >= br.x && cx <= br.x + br.w && cy >= br.y && cy <= br.y + br.h) {
-      side = "right"; startOffsetX = offsetXRRef.current; startOffsetY = offsetRRef.current
+      side = "right"; bounds = br; startOffsetX = offsetXRRef.current; startOffsetY = offsetRRef.current
     }
-    if (!side) return
+    if (!side || !bounds) return
     e.preventDefault()
-    dragRef.current = { side, startClientX: e.clientX, startClientY: e.clientY, startOffsetX, startOffsetY }
-    setDragDisplay({ side, x: startOffsetX, y: startOffsetY })
+
+    // Check if near a corner (16px display-space tolerance) → scale drag.
+    const CORNER_TOL = 16
+    const corners = [
+      { x: bounds.x * dispScaleX, y: bounds.y * dispScaleY },
+      { x: (bounds.x + bounds.w) * dispScaleX, y: bounds.y * dispScaleY },
+      { x: bounds.x * dispScaleX, y: (bounds.y + bounds.h) * dispScaleY },
+      { x: (bounds.x + bounds.w) * dispScaleX, y: (bounds.y + bounds.h) * dispScaleY },
+    ]
+    let nearCorner = false
+    for (const c of corners) {
+      const dx = e.clientX - rect.left - c.x
+      const dy = e.clientY - rect.top - c.y
+      if (Math.sqrt(dx * dx + dy * dy) < CORNER_TOL) { nearCorner = true; break }
+    }
+
+    if (nearCorner) {
+      const centerPageX = rect.left + (bounds.x + bounds.w / 2) * dispScaleX
+      const centerPageY = rect.top + (bounds.y + bounds.h / 2) * dispScaleY
+      const startDist = Math.max(1, Math.sqrt((e.clientX - centerPageX) ** 2 + (e.clientY - centerPageY) ** 2))
+      const startScale = side === "left" ? productScaleLRef.current : productScaleRRef.current
+      scaleDragRef.current = { side, startScale, centerPageX, centerPageY, startDist }
+      setDragDisplay({ side, scale: startScale })
+    } else {
+      dragRef.current = { side, startClientX: e.clientX, startClientY: e.clientY, startOffsetX, startOffsetY }
+      setDragDisplay({ side, x: startOffsetX, y: startOffsetY })
+    }
   }, [])
 
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (dragRef.current) return
+    if (dragRef.current || scaleDragRef.current) return
     const canvas = canvasRef.current
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
+    const dispScaleX = rect.width / canvas.width
+    const dispScaleY = rect.height / canvas.height
     const cx = (e.clientX - rect.left) * scaleX
     const cy = (e.clientY - rect.top) * scaleY
     const bl = renderedBoundsRef.current.left
     const br = renderedBoundsRef.current.right
-    const over =
-      (bl && cx >= bl.x && cx <= bl.x + bl.w && cy >= bl.y && cy <= bl.y + bl.h) ||
-      (br && cx >= br.x && cx <= br.x + br.w && cy >= br.y && cy <= br.y + br.h)
-    canvas.style.cursor = over ? "grab" : "default"
+
+    let hitBounds: { x: number; y: number; w: number; h: number } | null = null
+    let hitSide: "left" | "right" | null = null
+    if (bl && cx >= bl.x && cx <= bl.x + bl.w && cy >= bl.y && cy <= bl.y + bl.h) {
+      hitBounds = bl; hitSide = "left"
+    } else if (br && cx >= br.x && cx <= br.x + br.w && cy >= br.y && cy <= br.y + br.h) {
+      hitBounds = br; hitSide = "right"
+    }
+
+    if (hitBounds && hitSide) {
+      const displayCorners = [
+        { x: hitBounds.x * dispScaleX, y: hitBounds.y * dispScaleY },
+        { x: (hitBounds.x + hitBounds.w) * dispScaleX, y: hitBounds.y * dispScaleY },
+        { x: hitBounds.x * dispScaleX, y: (hitBounds.y + hitBounds.h) * dispScaleY },
+        { x: (hitBounds.x + hitBounds.w) * dispScaleX, y: (hitBounds.y + hitBounds.h) * dispScaleY },
+      ]
+      const CORNER_TOL = 16
+      let nearCornerIdx: number | null = null
+      for (let i = 0; i < displayCorners.length; i++) {
+        const dx = e.clientX - rect.left - displayCorners[i].x
+        const dy = e.clientY - rect.top - displayCorners[i].y
+        if (Math.sqrt(dx * dx + dy * dy) < CORNER_TOL) { nearCornerIdx = i; break }
+      }
+      const hoverKey = `${hitSide}-${nearCornerIdx}`
+      if (hoverKey !== prevHoverKeyRef.current) {
+        prevHoverKeyRef.current = hoverKey
+        setProductHover({ side: hitSide, displayCorners, nearCornerIdx })
+      }
+      if (nearCornerIdx !== null) {
+        canvas.style.cursor = nearCornerIdx === 0 || nearCornerIdx === 3 ? "nwse-resize" : "nesw-resize"
+      } else {
+        canvas.style.cursor = "grab"
+      }
+    } else {
+      if (prevHoverKeyRef.current !== null) {
+        prevHoverKeyRef.current = null
+        setProductHover(null)
+      }
+      canvas.style.cursor = "default"
+    }
+  }, [])
+
+  const handleCanvasMouseLeave = useCallback(() => {
+    if (!dragRef.current && !scaleDragRef.current) setProductHover(null)
   }, [])
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>, type: "right" | "bottom" | "corner") => {
@@ -264,6 +374,16 @@ export function CompositorCanvas({
         setDragDisplay({ side, x: newOffsetX, y: newOffsetY })
       }
 
+      if (scaleDragRef.current) {
+        const { side, startScale, centerPageX, centerPageY, startDist } = scaleDragRef.current
+        const dx = e.clientX - centerPageX
+        const dy = e.clientY - centerPageY
+        const currentDist = Math.sqrt(dx * dx + dy * dy)
+        const newScale = Math.max(0.2, Math.min(3, startScale * (currentDist / startDist)))
+        onProductScaleChangeRef.current(side, newScale)
+        setDragDisplay({ side, scale: newScale })
+      }
+
       if (resizeDragRef.current) {
         const { type, startClientX, startClientY, startOutputW, startOutputH, displayW, displayH } = resizeDragRef.current
         const dx = e.clientX - startClientX
@@ -282,6 +402,7 @@ export function CompositorCanvas({
 
     const onUp = () => {
       if (dragRef.current) { dragRef.current = null; setDragDisplay(null) }
+      if (scaleDragRef.current) { scaleDragRef.current = null; setDragDisplay(null) }
       resizeDragRef.current = null
       const canvas = canvasRef.current
       if (canvas) canvas.style.cursor = "default"
@@ -299,6 +420,8 @@ export function CompositorCanvas({
   // is used both for the radiograph band and as the layer that dissolves away to
   // uncover the freshly drawn cutout underneath.
   const [active, setActive] = useState(false)
+  // Keep activeRef in sync with active state — read in stable drag callbacks to gate interaction.
+  useEffect(() => { activeRef.current = active }, [active])
   const [snapSrc, setSnapSrc] = useState<string | null>(null)
   const origRef = useRef<HTMLImageElement>(null) // dissolving original
   const xrayRef = useRef<HTMLImageElement>(null) // radiograph copy (banded)
@@ -329,7 +452,7 @@ export function CompositorCanvas({
     if (!leftImage && !rightImage) {
       renderedBoundsRef.current = { left: null, right: null }
       setHasContent(false)
-      onCanvasReady(canvas)
+      onCanvasReadyRef.current(canvas)
       return
     }
 
@@ -350,10 +473,10 @@ export function CompositorCanvas({
       const halfW = Math.max(1, (availableW - sepW) / 2)
       const scaleL = Math.min(halfW / boundsL.w, availableH / boundsL.h)
       const scaleR = Math.min(halfW / boundsR.w, availableH / boundsR.h)
-      const drawWL = boundsL.w * scaleL
-      const drawHL = boundsL.h * scaleL
-      const drawWR = boundsR.w * scaleR
-      const drawHR = boundsR.h * scaleR
+      const drawWL = boundsL.w * scaleL * productScaleL
+      const drawHL = boundsL.h * scaleL * productScaleL
+      const drawWR = boundsR.w * scaleR * productScaleR
+      const drawHR = boundsR.h * scaleR * productScaleR
 
       const cx = outputW / 2
       const leftInnerEdge = cx - sepW / 2
@@ -379,9 +502,10 @@ export function CompositorCanvas({
       const isLeft = !!leftImage
       const img = (leftImage || rightImage)!
       const bounds = getContentBounds(img)
-      const scale = Math.min(availableW / bounds.w, availableH / bounds.h)
-      const drawW = bounds.w * scale
-      const drawH = bounds.h * scale
+      const autoScale = Math.min(availableW / bounds.w, availableH / bounds.h)
+      const userScale = isLeft ? productScaleL : productScaleR
+      const drawW = bounds.w * autoScale * userScale
+      const drawH = bounds.h * autoScale * userScale
       const drawX = padding + (availableW - drawW) / 2 + (isLeft ? offsetXL : offsetXR)
       const drawY = centerY - drawH / 2 - (isLeft ? offsetL : offsetR)
       ctx.drawImage(img, bounds.x, bounds.y, bounds.w, bounds.h, drawX, drawY, drawW, drawH)
@@ -390,7 +514,7 @@ export function CompositorCanvas({
         : { left: null, right: { x: drawX, y: drawY, w: drawW, h: drawH } }
     }
 
-    onCanvasReady(canvas)
+    onCanvasReadyRef.current(canvas)
   }, [
     leftImage,
     rightImage,
@@ -404,9 +528,10 @@ export function CompositorCanvas({
     offsetR,
     offsetXL,
     offsetXR,
+    productScaleL,
+    productScaleR,
     outputW,
     outputH,
-    onCanvasReady,
   ])
 
   // Phase machine: snapshot on scan start (scout), switch to the extraction pass
@@ -414,8 +539,6 @@ export function CompositorCanvas({
   useEffect(() => {
     const startedScanning = scanning && !prevScanningRef.current
     const finished = revealKey > 0 && revealKey !== prevRevealRef.current
-
-    activeRef.current = scanning || (revealKey > 0 && revealKey !== prevRevealRef.current)
 
     if (startedScanning && hasContent && canvasRef.current) {
       try {
@@ -449,7 +572,6 @@ export function CompositorCanvas({
     if (!active) return
 
     const canvas = canvasRef.current
-    const easeInOut = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2)
 
     // Restore the finished bundle to its clean, sharp state.
     const settleCanvas = () => {
@@ -545,6 +667,7 @@ export function CompositorCanvas({
           style={{ aspectRatio: `${outputW} / ${outputH}` }}
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
+          onMouseLeave={handleCanvasMouseLeave}
         />
 
         {/* Invisible resize handles on edges */}
@@ -561,12 +684,32 @@ export function CompositorCanvas({
           onMouseDown={(e) => handleResizeMouseDown(e, "corner")}
         />
 
-        {/* Coordinate badge while dragging */}
+        {/* Corner scale handles — visible when hovering a product */}
+        {productHover && !dragDisplay && (
+          <>
+            {productHover.displayCorners.map((corner, i) => (
+              <div
+                key={i}
+                className="pointer-events-none absolute z-20 h-3 w-3 rounded-full border-2 border-[var(--bundla-orange)] bg-white shadow-sm"
+                style={{
+                  left: corner.x,
+                  top: corner.y,
+                  transform: `translate(-50%, -50%) scale(${productHover.nearCornerIdx === i ? 1.5 : 1})`,
+                  opacity: productHover.nearCornerIdx === i ? 1 : 0.7,
+                  transition: "transform 0.1s ease, opacity 0.1s ease",
+                }}
+              />
+            ))}
+          </>
+        )}
+
+        {/* Live coordinate / scale badge while dragging */}
         {dragDisplay && (
           <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-lg bg-ink/80 px-3 py-1.5 font-mono text-xs text-white">
-            {dragDisplay.side === "left" ? "Vänster" : "Höger"} &nbsp;
-            X: {dragDisplay.x > 0 ? "+" : ""}{Math.round(dragDisplay.x)}px &nbsp;
-            Y: {dragDisplay.y > 0 ? "+" : ""}{Math.round(dragDisplay.y)}px
+            {dragDisplay.side === "left" ? "Vänster" : "Höger"}&nbsp;&nbsp;
+            {dragDisplay.scale !== undefined
+              ? `${Math.round(dragDisplay.scale * 100)}%`
+              : `X: ${dragDisplay.x! > 0 ? "+" : ""}${Math.round(dragDisplay.x!)}px  Y: ${dragDisplay.y! > 0 ? "+" : ""}${Math.round(dragDisplay.y!)}px`}
           </div>
         )}
 
