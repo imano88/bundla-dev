@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Familjen_Grotesk, Bricolage_Grotesque, Space_Mono } from 'next/font/google'
+import { Familjen_Grotesk, DM_Sans, Space_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
@@ -8,10 +8,11 @@ const fontSans = Familjen_Grotesk({
   display: 'swap',
   variable: '--font-familjen',
 })
-const fontDisplay = Bricolage_Grotesque({
+const fontDisplay = DM_Sans({
   subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
-  variable: '--font-bricolage',
+  variable: '--font-dm-sans',
 })
 const fontMono = Space_Mono({
   subsets: ['latin'],

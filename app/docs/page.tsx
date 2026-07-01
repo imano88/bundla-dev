@@ -39,7 +39,7 @@ export default function DocsPage() {
 
         <div className="mt-10">
           <Link href="/studio" className="btn-brand inline-flex rounded-[11px] px-5 py-3 text-sm font-semibold">
-            Öppna Studio →
+            Skapa en bundle →
           </Link>
         </div>
       </div>

@@ -15,6 +15,12 @@ export default function SolutionsIndex() {
     <div className="min-h-screen bg-[var(--app-bg)] text-ink">
       <MarketingHeader />
       <section className="mx-auto max-w-[1200px] px-6 pt-10 pb-16 sm:px-10">
+        <Link href="/" className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-ink-body transition-colors hover:text-ink">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Tillbaka
+        </Link>
         <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-ghost">Lösningar</div>
         <h1 className="max-w-[760px] font-display text-[38px] font-bold leading-[1.05] tracking-[-0.03em] sm:text-[52px]">
           Vad vill du lösa?

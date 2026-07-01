@@ -44,7 +44,7 @@ export function MobileMenu() {
                 Logga in
               </Link>
               <Link href="/studio" onClick={close} className="btn-brand mt-1 inline-flex items-center justify-center rounded-[11px] px-4 py-3 text-[15px] font-semibold">
-                Öppna Studio →
+                Skapa en bundle →
               </Link>
             </nav>
           </div>

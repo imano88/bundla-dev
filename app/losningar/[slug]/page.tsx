@@ -79,7 +79,7 @@ export default async function SolutionPage({
         ))}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
           <Link href="/studio" className="btn-brand inline-flex w-full items-center justify-center gap-2 rounded-[11px] px-7 py-3.5 text-base font-semibold sm:w-auto">
-            Öppna Studio →
+            Skapa en bundle →
           </Link>
           <Link href="/losningar" className="inline-flex w-full items-center justify-center rounded-[11px] border border-[var(--line-strong)] bg-[var(--surface)] px-7 py-3.5 text-base font-semibold transition-colors hover:bg-white sm:w-auto">
             Alla lösningar
@@ -155,7 +155,7 @@ export default async function SolutionPage({
             <p className="mt-4 text-[18px] leading-relaxed text-[#FFEAD8]">{s.ctaText}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5">
               <Link href="/studio" className="inline-flex w-full items-center justify-center gap-2 rounded-[11px] bg-ink px-7 py-3.5 text-base font-semibold text-white transition-transform active:translate-y-px sm:w-auto">
-                Öppna Studio →
+                Skapa en bundle →
               </Link>
               <a href="mailto:jakob.radback@markable.se" className="inline-flex w-full items-center justify-center rounded-[11px] bg-white/90 px-7 py-3.5 text-base font-semibold text-ink transition-colors hover:bg-white sm:w-auto">
                 Kontakta oss

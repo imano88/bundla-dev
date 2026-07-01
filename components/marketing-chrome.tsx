@@ -39,7 +39,7 @@ export function MarketingHeader() {
           href="/studio"
           className="btn-brand inline-flex items-center gap-2 rounded-[11px] px-5 py-2.5 text-[15px] font-semibold"
         >
-          Öppna Studio →
+          Skapa en bundle →
         </Link>
       </div>
     </header>
