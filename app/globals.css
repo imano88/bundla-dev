@@ -113,6 +113,15 @@
 }
 
 @layer base {
+  html {
+    /* sticky header height (74px) + 10px breathing room */
+    scroll-padding-top: 84px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
   * {
     @apply border-border outline-ring/50;
   }
@@ -152,13 +161,17 @@
   .btn-brand:active {
     transform: translateY(0.5px);
   }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-brand {
+      transition: none;
+    }
+  }
   /* Transparency checkerboard used in the preview. */
   .checker {
     background: repeating-conic-gradient(#e9ebee 0% 25%, #f7f8f9 0% 50%) 50% / 26px 26px;
   }
 
-  /* Logomark hover animation (from the design handoff): the two squares slide
-     together and the mark scales up slightly, with a springy ease. */
+  /* Logomark hover animation: squares slide together + mark scales up. */
   .logo-anim,
   .logo-anim-a,
   .logo-anim-b {
@@ -173,12 +186,22 @@
   .group:hover .logo-anim-b {
     transform: translate(calc(var(--mv) * -1), calc(var(--mv) * -1));
   }
+
+  /* Plus → checkmark swap once the slide animation is done (~0.5s) */
+  .logo-plus  { transition: opacity 0.12s ease 0s; }
+  .logo-check { opacity: 0; transition: opacity 0.12s ease 0s; }
+  .group:hover .logo-plus  { opacity: 0; transition: opacity 0.1s ease 0.44s; }
+  .group:hover .logo-check { opacity: 1; transition: opacity 0.16s ease 0.5s; }
+
   @media (prefers-reduced-motion: reduce) {
     .logo-anim,
     .logo-anim-a,
     .logo-anim-b {
       transition: none;
     }
+    .logo-plus, .logo-check { transition: none; }
+    .group:hover .logo-check { opacity: 0; }
+    .group:hover .logo-plus  { opacity: 1; }
   }
 }
 
@@ -194,7 +217,23 @@
     }
   }
   .animate-rise {
-    animation: rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: rise-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  /* Scroll-reveal — initial state only active once JS has loaded */
+  .js-ready [data-reveal] {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .js-ready [data-reveal].revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-rise { animation: none; opacity: 1; }
+    .js-ready [data-reveal] { opacity: 1; transform: none; transition: none; }
+  }
 }
